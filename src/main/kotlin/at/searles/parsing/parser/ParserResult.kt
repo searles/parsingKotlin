@@ -11,6 +11,8 @@ interface ParserResult<A> {
                     get() = false
                 override val value: A
                     get() = error("Failure")
+
+                override fun toString(): String = "failure"
             }
         }
 
@@ -20,6 +22,8 @@ interface ParserResult<A> {
                     get() = true
                 override val value: A
                     get() = value
+
+                override fun toString(): String = "success($value)"
             }
         }
     }
