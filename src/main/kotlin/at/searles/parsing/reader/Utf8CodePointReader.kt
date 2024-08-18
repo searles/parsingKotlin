@@ -2,7 +2,7 @@ package at.searles.parsing.reader
 
 import java.io.InputStream
 
-class Utf8CodePointReader(val inputStream: InputStream) : CodePointReader {
+class Utf8CodePointReader(private val inputStream: InputStream) : CodePointReader {
     private val buf = ByteArray(4)
 
     override fun read(): Int {

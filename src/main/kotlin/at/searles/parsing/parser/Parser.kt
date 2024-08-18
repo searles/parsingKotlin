@@ -1,11 +1,12 @@
 package at.searles.parsing.parser
 
+import at.searles.parsing.Result
 import at.searles.parsing.parser.combinators.ParserThenFold
 import at.searles.parsing.parser.combinators.ParserThenReducer
-import at.searles.parsing.reader.IndexedReader
+import at.searles.parsing.reader.PositionReader
 
 interface Parser<A> {
-    fun parse(reader: IndexedReader): ParserResult<A>
+    fun parse(reader: PositionReader): Result<A>
 
     operator fun <B> plus(reducer: Reducer<A, B>): Parser<B> {
         return ParserThenReducer(this, reducer)

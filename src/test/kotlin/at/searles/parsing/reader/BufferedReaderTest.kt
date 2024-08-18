@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 
-class BufferedIndexedReaderTest {
+class BufferedReaderTest {
     @Test
     fun `WHEN reading string THEN string is read and indices are correct`() {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedIndexedReader(codePointReader, bufSize = 4)
+        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         var str = ""
@@ -20,9 +20,9 @@ class BufferedIndexedReaderTest {
 
         // Assert
         Assertions.assertEquals(testString, str)
-        Assertions.assertEquals(testString.length.toLong(), indexedReader.index)
+        Assertions.assertEquals(testString.length.toLong(), indexedReader.position)
         Assertions.assertEquals(-1, indexedReader.read())
-        Assertions.assertEquals(testString.length.toLong(), indexedReader.index, "Reading after end does not change index")
+        Assertions.assertEquals(testString.length.toLong(), indexedReader.position, "Reading after end does not change index")
     }
 
     @Test
@@ -30,14 +30,14 @@ class BufferedIndexedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedIndexedReader(codePointReader, bufSize = 4)
+        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         repeat(10) {
             indexedReader.read()
         }
 
-        indexedReader.index = 6
+        indexedReader.position = 6
 
         // Assert
         Assertions.assertEquals('W', indexedReader.read().toChar())
@@ -53,11 +53,11 @@ class BufferedIndexedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedIndexedReader(codePointReader, bufSize = 4)
+        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         repeat(10) { indexedReader.read() }
-        indexedReader.index = 6
+        indexedReader.position = 6
 
         // Assert
         Assertions.assertEquals('W', indexedReader.read().toChar())
@@ -73,14 +73,14 @@ class BufferedIndexedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedIndexedReader(codePointReader, bufSize = 4)
+        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         repeat(10) { indexedReader.read() }
 
         // Assert
         try {
-            indexedReader.index = 5
+            indexedReader.position = 5
             Assertions.fail()
         } catch (_: IllegalArgumentException) {}
     }

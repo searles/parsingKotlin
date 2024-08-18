@@ -6,10 +6,10 @@ import at.searles.parsing.Success
 import at.searles.parsing.parser.*
 import at.searles.parsing.reader.PositionReader
 
-class ParserThenFold<A, B, C>(private val parser: Parser<B>, private val fold: Fold<A, B, C>) : Reducer<A, C> {
-    override fun parse(reader: PositionReader, input: A): Result<C> {
+class ParserThenConverter<A, B>(private val parser: Parser<A>, private val converter: Converter<A, B>): Parser<B> {
+    override fun parse(reader: PositionReader): Result<B> {
         return when (val result = parser.parse(reader)) {
-            is Success -> Success(fold.fold(input, result.value), result.start, result.end)
+            is Success -> Success(converter.convert(result.value), result.start, result.end)
             else -> Failure
         }
     }
