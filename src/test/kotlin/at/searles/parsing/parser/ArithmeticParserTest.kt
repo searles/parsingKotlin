@@ -26,15 +26,22 @@ class ArithmeticParserTest {
 
     @ParameterizedTest
     @CsvSource(
-        "1+2+3, 6",
-        "1+2-3, 0",
-        "1+2+3+4, 10",
-        "23-11-12, 0"
+        "((2)), 2",
+        "-1, -1",
+        "-((1)), -1",
+        "--1, 1",
+        "1*2+3, 5",
+        "3-(2+1), 0",
+        "1+2+3*4, 15",
     )    fun `WHEN given a arithmetic sum THEN the correct result is determined`(expr: String, expected: Int) {
+        // Arrange
+        val reader = StringCodePointReader(expr)
+
         // Act
-        val result = ArithmeticParser.arithmetic.parse(StringCodePointReader(expr))
+        val result = ArithmeticParser.expr.parse(reader)
 
         // Assert
+        Assertions.assertEquals(-1, reader.read())
         Assertions.assertTrue(result is Success)
         Assertions.assertEquals(expected, (result as Success).value)
     }

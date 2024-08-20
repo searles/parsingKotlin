@@ -10,19 +10,19 @@ class BufferedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
+        val reader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         var str = ""
         repeat(testString.length) {
-            str += indexedReader.read().toChar()
+            str += reader.read().toChar()
         }
 
         // Assert
         Assertions.assertEquals(testString, str)
-        Assertions.assertEquals(testString.length.toLong(), indexedReader.position)
-        Assertions.assertEquals(-1, indexedReader.read())
-        Assertions.assertEquals(testString.length.toLong(), indexedReader.position, "Reading after end does not change index")
+        Assertions.assertEquals(testString.length.toLong(), reader.position)
+        Assertions.assertEquals(-1, reader.read())
+        Assertions.assertEquals(testString.length.toLong(), reader.position, "Reading after end does not change index")
     }
 
     @Test
@@ -30,22 +30,22 @@ class BufferedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
+        val reader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
         repeat(10) {
-            indexedReader.read()
+            reader.read()
         }
 
-        indexedReader.position = 6
+        reader.position = 6
 
         // Assert
-        Assertions.assertEquals('W', indexedReader.read().toChar())
-        Assertions.assertEquals('o', indexedReader.read().toChar())
-        Assertions.assertEquals('r', indexedReader.read().toChar())
-        Assertions.assertEquals('l', indexedReader.read().toChar())
-        Assertions.assertEquals('d', indexedReader.read().toChar())
-        Assertions.assertEquals(-1, indexedReader.read())
+        Assertions.assertEquals('W', reader.read().toChar())
+        Assertions.assertEquals('o', reader.read().toChar())
+        Assertions.assertEquals('r', reader.read().toChar())
+        Assertions.assertEquals('l', reader.read().toChar())
+        Assertions.assertEquals('d', reader.read().toChar())
+        Assertions.assertEquals(-1, reader.read())
     }
 
     @Test
@@ -53,19 +53,19 @@ class BufferedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
+        val reader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
-        repeat(10) { indexedReader.read() }
-        indexedReader.position = 6
+        repeat(10) { reader.read() }
+        reader.position = 6
 
         // Assert
-        Assertions.assertEquals('W', indexedReader.read().toChar())
-        Assertions.assertEquals('o', indexedReader.read().toChar())
-        Assertions.assertEquals('r', indexedReader.read().toChar())
-        Assertions.assertEquals('l', indexedReader.read().toChar())
-        Assertions.assertEquals('d', indexedReader.read().toChar())
-        Assertions.assertEquals(-1, indexedReader.read())
+        Assertions.assertEquals('W', reader.read().toChar())
+        Assertions.assertEquals('o', reader.read().toChar())
+        Assertions.assertEquals('r', reader.read().toChar())
+        Assertions.assertEquals('l', reader.read().toChar())
+        Assertions.assertEquals('d', reader.read().toChar())
+        Assertions.assertEquals(-1, reader.read())
     }
 
     @Test
@@ -73,15 +73,89 @@ class BufferedReaderTest {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
-        val indexedReader = BufferedReader(codePointReader, bufSize = 4)
+        val reader = BufferedReader(codePointReader, bufSize = 4)
 
         // Act
-        repeat(10) { indexedReader.read() }
+        repeat(10) { reader.read() }
 
         // Assert
         try {
-            indexedReader.position = 5
+            reader.position = 5
             Assertions.fail()
         } catch (_: IllegalArgumentException) {}
+    }
+
+    @Test
+    fun `WHEN creating subreader THEN char contains correct chars`() {
+        // Arrange
+        val testString = "Hello World"
+        val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
+        val reader = BufferedReader(codePointReader, bufSize = 4)
+
+        // Act
+        repeat(5) { reader.read() }
+        val sub = reader.getReader(1L, 5L)
+
+        // Assert
+        Assertions.assertEquals('e'.code, sub.read())
+        Assertions.assertEquals('l'.code, sub.read())
+        Assertions.assertEquals('l'.code, sub.read())
+        Assertions.assertEquals('o'.code, sub.read())
+        Assertions.assertEquals(-1, sub.read())
+    }
+
+
+    @Test
+    fun `WHEN creating subreader of subreader THEN char contains correct chars`() {
+        // Arrange
+        val testString = "Hello World"
+        val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
+        val reader = BufferedReader(codePointReader, bufSize = 4)
+
+        // Act
+        repeat(5) { reader.read() }
+        val sub = reader.getReader(1L, 5L).getReader(1L, 3L)
+
+        // Assert
+        Assertions.assertEquals('e'.code, sub.read())
+        Assertions.assertEquals('l'.code, sub.read())
+        Assertions.assertEquals(-1, sub.read())
+    }
+
+    @Test
+    fun `WHEN creating subreader AND reading from non-existing position THEN exception is thrown`() {
+        // Arrange
+        val testString = "Hello World"
+        val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
+        val reader = BufferedReader(codePointReader, bufSize = 4)
+
+        // Act
+        repeat(5) { reader.read() }
+        val sub = reader.getReader(0L, 5L) // 0 is out of bounds
+
+        // Assert
+        try {
+            sub.read()
+            Assertions.fail()
+        } catch (_: Exception) {}
+    }
+
+    @Test
+    fun `WHEN reading from subreader AND advancing in reader THEN exception is thrown`() {
+        // Arrange
+        val testString = "Hello World"
+        val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
+        val reader = BufferedReader(codePointReader, bufSize = 4)
+
+        // Act
+        repeat(5) { reader.read() }
+        val sub = reader.getReader(1L, 5L)
+        reader.read()
+
+        // Assert
+        try {
+            sub.read()
+            Assertions.fail()
+        } catch (_: Exception) {}
     }
 }

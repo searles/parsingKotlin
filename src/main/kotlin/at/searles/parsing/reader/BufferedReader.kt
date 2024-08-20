@@ -57,8 +57,8 @@ class BufferedReader(private val delegate: CodePointReader, private val bufSize:
             if (position >= end) {
                 return -1
             } else {
-                require(count - bufSize < position)
-                return buf[(position % bufSize).toInt()]
+                require(count - bufSize <= position)
+                return buf[(position++ % bufSize).toInt()]
             }
         }
     }

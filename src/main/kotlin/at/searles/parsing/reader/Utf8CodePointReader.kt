@@ -14,8 +14,8 @@ class Utf8CodePointReader(private val inputStream: InputStream) : CodePointReade
 
         for (i in 1 until byteCount) {
             val nextByte = inputStream.read()
-            if (nextByte == -1) throw IllegalArgumentException("Unexpected end of stream")
-            if (nextByte and 0b11000000 != 0b10000000) throw IllegalArgumentException("Invalid UTF-8 continuation byte: $nextByte")
+            if (nextByte == -1) error("Unexpected end of stream")
+            if (nextByte and 0b11000000 != 0b10000000) error("Invalid UTF-8 continuation byte: $nextByte")
             buf[i] = nextByte.toByte()
         }
 

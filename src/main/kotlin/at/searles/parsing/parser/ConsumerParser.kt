@@ -6,6 +6,7 @@ import at.searles.parsing.Success
 import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 
+// Temporary class, I do not expect to use it that much
 class ConsumerParser<A, B>(private val consumer: Consumer<A>, private val label: A, private val converter: Converter<PositionReader, B>) : Parser<B> {
     override fun parse(reader: PositionReader): Result<B> {
         val checkpoint = reader.position
