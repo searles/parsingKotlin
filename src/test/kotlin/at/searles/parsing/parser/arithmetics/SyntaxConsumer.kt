@@ -6,7 +6,7 @@ import at.searles.parsing.Result
 import at.searles.parsing.Success
 import at.searles.parsing.reader.PositionReader
 
-object ArithmeticSyntaxConsumer : Consumer<SyntaxLabel> {
+object SyntaxConsumer : Consumer<SyntaxLabel> {
     override fun consume(reader: PositionReader): Result<SyntaxLabel> {
         val checkpoint = reader.position
         var cp = reader.read()

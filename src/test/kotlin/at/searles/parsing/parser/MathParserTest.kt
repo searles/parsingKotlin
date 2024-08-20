@@ -1,13 +1,13 @@
 package at.searles.parsing.parser
 
 import at.searles.parsing.Success
-import at.searles.parsing.parser.arithmetics.ArithmeticParser
+import at.searles.parsing.parser.arithmetics.MathParser
 import at.searles.parsing.reader.StringCodePointReader
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-class ArithmeticParserTest {
+class MathParserTest {
     @ParameterizedTest
     @CsvSource(
         "12+15, 27",
@@ -17,7 +17,7 @@ class ArithmeticParserTest {
         "100-1, 99"
     )    fun `WHEN given a simple arithmetic sum THEN the correct result is determined`(expr: String, expected: Int) {
         // Act
-        val result = ArithmeticParser.simpleArithmetic.parse(StringCodePointReader(expr))
+        val result = MathParser.simpleArithmetic.parse(StringCodePointReader(expr))
 
         // Assert
         Assertions.assertTrue(result is Success)
@@ -38,7 +38,7 @@ class ArithmeticParserTest {
         val reader = StringCodePointReader(expr)
 
         // Act
-        val result = ArithmeticParser.expr.parse(reader)
+        val result = MathParser.expr.parse(reader)
 
         // Assert
         Assertions.assertEquals(-1, reader.read())
