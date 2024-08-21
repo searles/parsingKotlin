@@ -19,6 +19,7 @@ class AstParserTest {
         "1+2+3+4, (+ (+ (+ 1 2) 3) 4)",
         "3-(2+1), (- 3 (+ 2 1))",
         "1+2+3*4, (+ (+ 1 2) (* 3 4))",
+        "1--2, (- 1 (- 2))"
     )
     fun `WHEN given a arithmetic sum THEN the correct result is determined`(expr: String, expected: String) {
         // Arrange
@@ -33,19 +34,27 @@ class AstParserTest {
         Assertions.assertEquals(expected, (result as ParseSuccess).value.toString())
     }
 
-    @Test
-    fun `WHEN parsing and printing a tree THEN the printed ast is correct`() {
+    @ParameterizedTest
+    @CsvSource(
+        "((2)), 2",
+        "-1, -1",
+        "-((1)), -1",
+        "(1+2+3)+4, 1+2+3+4",
+        "3-(2+1), 3-(2+1)",
+        "1+2+(3*4), 1+2+3*4",
+        "2-(-3), 2--3"
+    )    fun `WHEN parsing and printing a tree THEN the printed ast is correct`(expr: String, expected: String) {
         // Arrange
-        val inString = "1+2"
-        val reader = StringCodePointReader(inString)
+        val reader = StringCodePointReader(expr)
 
         // Act
-        val printTreeResult = when (val ast = AstParser.expr.parse(reader)) {
+        val result = when (val ast = AstParser.expr.parse(reader)) {
             is ParseFailure -> Assertions.fail()
             is ParseSuccess -> AstParser.expr.print(ast.value)
         }
 
         // Assert
-        Assertions.assertTrue(printTreeResult is PrintSuccess)
+        Assertions.assertTrue(result is PrintSuccess)
+        Assertions.assertEquals(expected, (result as PrintSuccess).toString())
     }
 }

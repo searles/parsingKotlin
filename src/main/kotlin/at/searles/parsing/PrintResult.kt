@@ -26,9 +26,22 @@ data object EmptyPrintSuccess : PrintSuccess {
     override fun plus(right: PrintSuccess): PrintSuccess {
         return right
     }
+
+    override fun toString(): String {
+        return ""
+    }
 }
 
-data class StringPrintSuccess(val string: String) : PrintSuccess
-data class ComposedPrintSuccess(val left: PrintSuccess, val right: PrintSuccess) : PrintSuccess
+data class StringPrintSuccess(val string: String) : PrintSuccess {
+    override fun toString(): String {
+        return string
+    }
+}
+
+data class ComposedPrintSuccess(val left: PrintSuccess, val right: PrintSuccess) : PrintSuccess {
+    override fun toString(): String {
+        return "$left$right"
+    }
+}
 
 

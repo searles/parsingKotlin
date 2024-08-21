@@ -85,7 +85,7 @@ class BufferedReader(private val delegate: CodePointReader, private val bufSize:
             }
 
         override fun getSequence(start: Long, end: Long): CodePointSequence {
-            return InternalSubSequence(start, end)
+            return InternalSubSequence(start + this.start, end + this.start)
         }
 
         override fun read(): Int {
