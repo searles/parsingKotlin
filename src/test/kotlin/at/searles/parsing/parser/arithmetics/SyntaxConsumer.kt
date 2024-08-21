@@ -1,13 +1,12 @@
 package at.searles.parsing.parser.arithmetics
 
-import at.searles.parsing.Failure
+import at.searles.parsing.*
 import at.searles.parsing.reader.Consumer
-import at.searles.parsing.Result
-import at.searles.parsing.Success
+import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.PositionReader
 
 object SyntaxConsumer : Consumer<SyntaxLabel> {
-    override fun consume(reader: PositionReader): Result<SyntaxLabel> {
+    override fun consume(reader: PositionReader): ParseResult<SyntaxLabel> {
         val checkpoint = reader.position
         var cp = reader.read()
 
@@ -35,10 +34,29 @@ object SyntaxConsumer : Consumer<SyntaxLabel> {
 
         if (label == null) {
             reader.position = checkpoint
-            return Failure
+            return ParseFailure(checkpoint, "Unknown label")
         } else {
 
-            return Success(label, checkpoint, reader.position)
+            return ParseSuccess(label, checkpoint, reader.position)
+        }
+    }
+
+    override fun print(label: SyntaxLabel, sequence: CodePointSequence): PrintResult {
+        return when (label) {
+            SyntaxLabel.Number -> StringPrintSuccess(sequence.toString())
+            else -> PrintFailure
+        }
+    }
+
+    override fun print(label: SyntaxLabel): PrintResult {
+        return when (label) {
+            SyntaxLabel.Plus -> StringPrintSuccess("+")
+            SyntaxLabel.Minus -> StringPrintSuccess("-")
+            SyntaxLabel.Times -> StringPrintSuccess("*")
+            SyntaxLabel.Div -> StringPrintSuccess("/")
+            SyntaxLabel.Open -> StringPrintSuccess("(")
+            SyntaxLabel.Close -> StringPrintSuccess(")")
+            else -> PrintFailure
         }
     }
 }

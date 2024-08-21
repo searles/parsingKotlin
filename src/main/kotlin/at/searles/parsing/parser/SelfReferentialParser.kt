@@ -1,19 +1,27 @@
 package at.searles.parsing.parser
 
-import at.searles.parsing.Result
+import at.searles.parsing.PrintResult
+import at.searles.parsing.ParseResult
 import at.searles.parsing.reader.PositionReader
 
 class SelfReferentialParser<A>(private val initializer: (SelfReferentialParser<A>) -> Parser<A>): Parser<A> {
-    private var parser: Parser<A>? = null
+    private var isInitialized: Boolean = false
+    private lateinit var parser: Parser<A>
 
-    override fun parse(reader: PositionReader): Result<A> {
+    override fun parse(reader: PositionReader): ParseResult<A> {
         initialize()
-        return parser?.parse(reader) ?: error("SelfReferentialParser is not initialized")
+        return parser.parse(reader)
+    }
+
+    override fun print(value: A): PrintResult {
+        initialize()
+        return parser.print(value)
     }
 
     private fun initialize() {
-        if (parser == null) {
+        if (!isInitialized) {
             parser = initializer(this)
+            isInitialized = true
         }
     }
 }

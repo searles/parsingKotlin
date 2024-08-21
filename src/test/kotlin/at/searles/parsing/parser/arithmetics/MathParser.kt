@@ -2,7 +2,7 @@ package at.searles.parsing.parser.arithmetics
 
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
-import at.searles.parsing.reader.CodePointReader
+import at.searles.parsing.reader.CodePointSequence
 
 object MathParser {
     private val number = ConsumerParser(SyntaxConsumer, SyntaxLabel.Number) {
@@ -34,12 +34,13 @@ object MathParser {
         kw(SyntaxLabel.Minus) + prod + Fold { left: Int, right: Int -> left - right }
     ).rep()
 
-    fun parseNumber(reader: CodePointReader): Int {
+    fun parseNumber(seq: CodePointSequence): Int {
         var n = 0
-        var cp = reader.read()
+        var index = 0
+        var cp = seq[index]
         while (cp != -1) {
             n = n * 10 + cp - '0'.code
-            cp = reader.read()
+            cp = seq[++index]
         }
         return n
     }

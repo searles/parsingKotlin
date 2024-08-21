@@ -86,7 +86,7 @@ class BufferedReaderTest {
     }
 
     @Test
-    fun `WHEN creating subreader THEN char contains correct chars`() {
+    fun `WHEN creating subsequence THEN char contains correct chars`() {
         // Arrange
         val testString = "Hello World"
         val codePointReader = Utf8CodePointReader(ByteArrayInputStream(testString.toByteArray(Charsets.UTF_8)))
@@ -94,14 +94,15 @@ class BufferedReaderTest {
 
         // Act
         repeat(5) { reader.read() }
-        val sub = reader.getReader(1L, 5L)
+        val sub = reader.getSequence(1L, 5L)
 
         // Assert
-        Assertions.assertEquals('e'.code, sub.read())
-        Assertions.assertEquals('l'.code, sub.read())
-        Assertions.assertEquals('l'.code, sub.read())
-        Assertions.assertEquals('o'.code, sub.read())
-        Assertions.assertEquals(-1, sub.read())
+        Assertions.assertEquals('e'.code, sub[0])
+        Assertions.assertEquals('l'.code, sub[1])
+        Assertions.assertEquals('l'.code, sub[2])
+        Assertions.assertEquals('o'.code, sub[3])
+        Assertions.assertEquals(-1, sub[-1])
+        Assertions.assertEquals(-1, sub[4])
     }
 
 
@@ -114,7 +115,7 @@ class BufferedReaderTest {
 
         // Act
         repeat(5) { reader.read() }
-        val sub = reader.getReader(1L, 5L).getReader(1L, 3L)
+        val sub = reader.getSequence(1L, 5L).toReader().getSequence(0L, 2L).toReader()
 
         // Assert
         Assertions.assertEquals('e'.code, sub.read())
@@ -131,11 +132,11 @@ class BufferedReaderTest {
 
         // Act
         repeat(5) { reader.read() }
-        val sub = reader.getReader(0L, 5L) // 0 is out of bounds
+        val sub = reader.getSequence(0L, 5L) // 0 is out of bounds
 
         // Assert
         try {
-            sub.read()
+            sub[0]
             Assertions.fail()
         } catch (_: Exception) {}
     }
@@ -149,7 +150,7 @@ class BufferedReaderTest {
 
         // Act
         repeat(5) { reader.read() }
-        val sub = reader.getReader(1L, 5L)
+        val sub = reader.getSequence(1L, 5L).toReader()
         reader.read()
 
         // Assert

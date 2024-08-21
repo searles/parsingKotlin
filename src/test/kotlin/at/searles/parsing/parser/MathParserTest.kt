@@ -1,6 +1,6 @@
 package at.searles.parsing.parser
 
-import at.searles.parsing.Success
+import at.searles.parsing.ParseSuccess
 import at.searles.parsing.parser.arithmetics.MathParser
 import at.searles.parsing.reader.StringCodePointReader
 import org.junit.jupiter.api.Assertions
@@ -20,8 +20,8 @@ class MathParserTest {
         val result = MathParser.simpleArithmetic.parse(StringCodePointReader(expr))
 
         // Assert
-        Assertions.assertTrue(result is Success)
-        Assertions.assertEquals(expected, (result as Success).value)
+        Assertions.assertTrue(result is ParseSuccess)
+        Assertions.assertEquals(expected, (result as ParseSuccess).value)
     }
 
     @ParameterizedTest
@@ -42,7 +42,7 @@ class MathParserTest {
 
         // Assert
         Assertions.assertEquals(-1, reader.read())
-        Assertions.assertTrue(result is Success)
-        Assertions.assertEquals(expected, (result as Success).value)
+        Assertions.assertTrue(result is ParseSuccess)
+        Assertions.assertEquals(expected, (result as ParseSuccess).value)
     }
 }

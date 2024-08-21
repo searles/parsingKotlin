@@ -1,25 +1,35 @@
 package at.searles.parsing.parser.combinators
 
-import at.searles.parsing.Failure
+import at.searles.parsing.*
 import at.searles.parsing.parser.Parser
-import at.searles.parsing.Result
-import at.searles.parsing.Success
+import at.searles.parsing.parser.PartialPrintFailure
+import at.searles.parsing.parser.PartialPrintSuccess
 import at.searles.parsing.parser.Recognizer
 import at.searles.parsing.reader.PositionReader
 
 class RecognizerThenParser<A>(private val left: Recognizer, private val right: Parser<A>): Parser<A> {
-    override fun parse(reader: PositionReader): Result<A> {
+    override fun parse(reader: PositionReader): ParseResult<A> {
         val checkpoint = reader.position
 
         return when (val leftResult = left.parse(reader)) {
-            is Success -> when (val rightResult = right.parse(reader)) {
-                is Success -> Success(rightResult.value, leftResult.start, rightResult.end)
-                is Failure -> {
+            is ParseSuccess -> when (val rightResult = right.parse(reader)) {
+                is ParseSuccess -> ParseSuccess(rightResult.value, leftResult.start, rightResult.end)
+                is ParseFailure -> {
                     reader.position = checkpoint
-                    Failure
+                    rightResult
                 }
             }
-            is Failure -> Failure
+            is ParseFailure -> leftResult
+        }
+    }
+
+    override fun print(value: A): PrintResult {
+        return when (val rightResult = right.print(value)) {
+            is PrintSuccess -> when (val leftResult = left.print()) {
+                is PrintSuccess -> leftResult + rightResult
+                is PrintFailure -> leftResult
+            }
+            is PrintFailure -> PrintFailure
         }
     }
 }

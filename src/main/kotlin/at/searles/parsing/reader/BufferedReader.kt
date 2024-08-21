@@ -1,5 +1,7 @@
 package at.searles.parsing.reader
 
+import java.lang.StringBuilder
+
 class BufferedReader(private val delegate: CodePointReader, private val bufSize: Int = 65536): PositionReader {
     init {
         require(bufSize > 0)
@@ -21,8 +23,8 @@ class BufferedReader(private val delegate: CodePointReader, private val bufSize:
             field = value
         }
 
-    override fun getReader(start: Long, end: Long): PositionReader {
-        return SubReader(start, end)
+    override fun getSequence(start: Long, end: Long): CodePointSequence {
+        return InternalSubSequence(start, end)
     }
 
     override fun read(): Int {
@@ -42,15 +44,48 @@ class BufferedReader(private val delegate: CodePointReader, private val bufSize:
         return codePoint
     }
 
-    private inner class SubReader(val start: Long, val end: Long) : PositionReader {
+    private inner class InternalSubSequence(val start: Long, val end: Long) : CodePointSequence {
+        override fun get(index: Int): Int {
+            if (0 > index ||  end - start <= index) {
+                return -1
+            } else {
+                require(count - bufSize <= index + start)
+                return buf[((index + start).toInt() % bufSize)]
+            }
+        }
+
+        override fun length(): Int {
+            return (end - start).toInt()
+        }
+
+        override fun toString(): String {
+            val sb = StringBuilder()
+
+            var index = 0
+            var cp = this[index]
+
+            while(cp != -1) {
+                sb.appendCodePoint(cp)
+                cp = this[++index]
+            }
+
+            return sb.toString()
+        }
+
+        override fun toReader(): PositionReader {
+            return InternalSubReader(start, end)
+        }
+    }
+
+    private inner class InternalSubReader(val start: Long, val end: Long) : PositionReader {
         override var position: Long = start
             set(value) {
                 require(value in start..end)
                 field = value
             }
 
-        override fun getReader(start: Long, end: Long): PositionReader {
-            return SubReader(start, end)
+        override fun getSequence(start: Long, end: Long): CodePointSequence {
+            return InternalSubSequence(start, end)
         }
 
         override fun read(): Int {
