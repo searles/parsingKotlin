@@ -5,7 +5,7 @@ import at.searles.parsing.ParseResult
 interface PositionReader : CodePointReader {
     var position: Long
 
-    fun <A> applyConsumer(consumer: Consumer<A>): ParseResult<A> {
+    fun <A> accept(consumer: Consumer<A>): ParseResult<A> {
         return consumer.consume(this)
     }
 

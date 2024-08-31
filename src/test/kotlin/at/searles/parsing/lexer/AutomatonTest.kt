@@ -76,7 +76,7 @@ class AutomatonTest {
     fun testRepeat() {
         // Arrange
         val automatonA = Automaton.ofString<Nothing>("A")
-        val automatonAs = automatonA.repeat().then(eofAutomaton)
+        val automatonAs = automatonA.plus().then(eofAutomaton)
 
         // Act / Assert
         Assertions.assertTrue(automatonAs.consume(StringCodePointReader("")) is ParseFailure)
@@ -89,7 +89,7 @@ class AutomatonTest {
     fun testOptional() {
         // Arrange
         val automatonA = Automaton.ofString<Nothing>("A")
-        val automatonAopt = automatonA.optional().then(eofAutomaton)
+        val automatonAopt = automatonA.opt().then(eofAutomaton)
 
         // Act / Assert
         Assertions.assertTrue(automatonAopt.consume(StringCodePointReader("")) is ParseSuccess)

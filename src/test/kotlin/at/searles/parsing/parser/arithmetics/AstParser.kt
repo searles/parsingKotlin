@@ -5,13 +5,11 @@ import at.searles.parsing.InvertResult
 import at.searles.parsing.InvertSuccess
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
-import at.searles.parsing.reader.CodePointReader
 import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
-import at.searles.parsing.reader.StringCodePointReader
 
 object AstParser {
-    private val number = ConsumerParser(SyntaxConsumer, SyntaxLabel.Number, numParser())
+    private val number = LexParser(SyntaxLabel.Number, SyntaxConsumer.lexer) + num()
 
     val expr: Parser<Node> = self { sum }
 
@@ -33,10 +31,10 @@ object AstParser {
             MathParser.kw(SyntaxLabel.Minus) + prod + branch("-")
     ).rep()
 
-    private fun numParser(): Converter<CodePointSequence, Node> {
+    private fun num(): Converter<CodePointSequence, Node> {
         return object: Converter<CodePointSequence, Node> {
             override fun convert(value: CodePointSequence): Node {
-                return Node.Num(MathParser.parseNumber(value))
+                return Node.Num(MathParser.num(value))
             }
 
             override fun invert(result: Node): InvertResult<CodePointSequence> {

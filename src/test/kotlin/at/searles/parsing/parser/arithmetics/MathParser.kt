@@ -3,11 +3,10 @@ package at.searles.parsing.parser.arithmetics
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
+import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
 object MathParser {
-    private val number = ConsumerParser(SyntaxConsumer, SyntaxLabel.Number) {
-        parseNumber(it)
-    }
+    private val number = LexParser(SyntaxLabel.Number, SyntaxConsumer.lexer) + Converter { num(it) }
 
     val simpleArithmetic = number + (
             kw(SyntaxLabel.Plus)  + number + Fold { left: Int, right: Int -> left + right } or
@@ -34,7 +33,7 @@ object MathParser {
         kw(SyntaxLabel.Minus) + prod + Fold { left: Int, right: Int -> left - right }
     ).rep()
 
-    fun parseNumber(seq: CodePointSequence): Int {
+    fun num(seq: CodePointSequence): Int {
         var n = 0
         var index = 0
         var cp = seq[index]
@@ -46,6 +45,6 @@ object MathParser {
     }
 
     fun kw(label: SyntaxLabel): Recognizer {
-        return ConsumerRecognizer(SyntaxConsumer, label)
+        return LexRecognizer(label, SyntaxConsumer.lexer) { label.text.asCodePointSequence() }
     }
 }

@@ -1,5 +1,7 @@
 package at.searles.parsing
 
+import at.searles.parsing.reader.CodePointSequence
+
 sealed interface PrintResult {
     operator fun plus(right: PrintSuccess): PrintSuccess
 }
@@ -32,9 +34,9 @@ data object EmptyPrintSuccess : PrintSuccess {
     }
 }
 
-data class StringPrintSuccess(val string: String) : PrintSuccess {
+data class TextPrintSuccess(val codePointSequence: CodePointSequence) : PrintSuccess {
     override fun toString(): String {
-        return string
+        return codePointSequence.toString()
     }
 }
 

@@ -3,11 +3,12 @@ package at.searles.parsing.lexer
 import at.searles.parsing.ParseFailure
 import at.searles.parsing.ParseResult
 import at.searles.parsing.ParseSuccess
+import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 import at.searles.parsing.utils.IntRangeMap
 
 class Node<A>(
-    val labels: Set<A>? = null,
+    var labels: Set<A>? = null,
     var edges: IntRangeMap<Node<A>> = IntRangeMap()
 ) {
     fun connectTo(values: IntRange, target: Node<A>) {
@@ -15,14 +16,14 @@ class Node<A>(
     }
 }
 
-class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<Node<A>>) {
+class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<Node<A>>): Consumer<Set<A>> {
     init {
         val nodes = collectNodes(startNode)
         require(finalNodes.all { it in nodes })
         require(nodes.all { it.labels == null && it !in finalNodes || it.labels != null && it in finalNodes })
     }
 
-    fun consume(reader: PositionReader): ParseResult<Set<A>> {
+    override fun consume(reader: PositionReader): ParseResult<Set<A>> {
         val start = reader.position
         var mark = -1L
         var labels: Set<A>? = null
@@ -50,7 +51,16 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         }
     }
 
-    fun or(other: Automaton<A>, labels: Set<A> = emptySet()): Automaton<A> {
+    fun applyLabel(labels: A): Automaton<A> {
+        finalNodes.forEach {
+            require(it.labels!!.isEmpty())
+            it.labels = setOf(labels)
+        }
+
+        return this
+    }
+
+    fun or(other: Automaton<A>): Automaton<A> {
         return DfaFactory(
             startNodes = setOf(startNode, other.startNode),
             finalNodes = finalNodes + other.finalNodes,
@@ -58,7 +68,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun then(other: Automaton<A>, labels: Set<A> = emptySet()): Automaton<A> {
+    fun then(other: Automaton<A>): Automaton<A> {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = other.finalNodes,
@@ -66,7 +76,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun repeat(labels: Set<A> = emptySet()): Automaton<A> {
+    fun plus(): Automaton<A> {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = finalNodes,
@@ -74,7 +84,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun optional(labels: Set<A> = emptySet()): Automaton<A> {
+    fun opt(): Automaton<A> {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = finalNodes + startNode,
@@ -83,14 +93,14 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
     }
 
     companion object {
-        fun <A> empty(labels: Set<A> = emptySet()): Automaton<A> {
-            val node = Node(labels)
-            return Automaton(node, setOf(node))
+        fun <A> nothing(): Automaton<A> {
+            val node = Node<A>()
+            return Automaton(node, emptySet())
         }
 
-        fun <A> ofRange(vararg values: IntRange, labels: Set<A> = emptySet()): Automaton<A> {
+        fun <A> ofRange(vararg values: IntRange): Automaton<A> {
             val q0 = Node<A>()
-            val q1 = Node(labels)
+            val q1 = Node<A>(labels = emptySet())
 
             withoutOverlaps(values).forEach {
                 q0.connectTo(it, q1)
@@ -116,8 +126,8 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
             return result
         }
 
-        fun <A> ofString(string: String, labels: Set<A> = emptySet()): Automaton<A> {
-            val finalNode = Node(labels)
+        fun <A> ofString(string: String): Automaton<A> {
+            val finalNode = Node<A>(emptySet())
             var node = finalNode
 
             string.reversed().codePoints().forEach { codePoint ->

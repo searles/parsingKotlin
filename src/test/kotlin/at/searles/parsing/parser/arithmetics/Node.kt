@@ -5,12 +5,6 @@ interface Node {
         return Branch(op, this, *otherArgs)
     }
 
-    companion object {
-        fun num(n: Int): Node {
-            return Num(n)
-        }
-    }
-
     class Num(val value: Int) : Node {
         override fun toString(): String {
             return "$value"
