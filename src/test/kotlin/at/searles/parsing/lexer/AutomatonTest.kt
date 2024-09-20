@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class AutomatonTest {
-    private val eofAutomaton = Automaton.ofRange<Nothing>(-1 .. -1)
+    private val eofAutomaton = Automaton.ofRange(-1 .. -1)
 
     @Test
     fun testAutomatonFromString() {
         // Arrange
-        val automaton = Automaton.ofString<Nothing>("Hello World")
+        val automaton = Automaton.ofString("Hello World").applyLabel(Label(0))
         val reader = StringCodePointReader("Hello World!")
 
         // Act
@@ -26,7 +26,7 @@ class AutomatonTest {
     @Test
     fun testAutomatonFromRange() {
         // Arrange
-        val automaton = Automaton.ofRange<Nothing>('A'.code .. 'C'.code, 'G'.code .. 'I'.code, 'B'.code .. 'D'.code)
+        val automaton = Automaton.ofRange('A'.code .. 'C'.code, 'G'.code .. 'I'.code, 'B'.code .. 'D'.code).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automaton.consume(StringCodePointReader("0")) is ParseFailure)
@@ -45,10 +45,10 @@ class AutomatonTest {
     @Test
     fun testOr() {
         // Arrange
-        val automatonAA = Automaton.ofString<Nothing>("AA")
-        val automatonBB = Automaton.ofString<Nothing>("BB")
+        val automatonAA = Automaton.ofString("AA")
+        val automatonBB = Automaton.ofString("BB")
 
-        val automatonAAorBB = automatonAA.or(automatonBB)
+        val automatonAAorBB = automatonAA.or(automatonBB).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automatonAAorBB.consume(StringCodePointReader("AA")) is ParseSuccess)
@@ -60,10 +60,10 @@ class AutomatonTest {
     @Test
     fun testThen() {
         // Arrange
-        val automatonA = Automaton.ofString<Nothing>("A")
-        val automatonB = Automaton.ofString<Nothing>("B")
+        val automatonA = Automaton.ofString("A")
+        val automatonB = Automaton.ofString("B")
 
-        val automatonAB = automatonA.then(automatonB)
+        val automatonAB = automatonA.then(automatonB).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automatonAB.consume(StringCodePointReader("AA")) is ParseFailure)
@@ -75,8 +75,8 @@ class AutomatonTest {
     @Test
     fun testRepeat() {
         // Arrange
-        val automatonA = Automaton.ofString<Nothing>("A")
-        val automatonAs = automatonA.plus().then(eofAutomaton)
+        val automatonA = Automaton.ofString("A")
+        val automatonAs = automatonA.plus().then(eofAutomaton).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automatonAs.consume(StringCodePointReader("")) is ParseFailure)
@@ -88,8 +88,8 @@ class AutomatonTest {
     @Test
     fun testOptional() {
         // Arrange
-        val automatonA = Automaton.ofString<Nothing>("A")
-        val automatonAopt = automatonA.opt().then(eofAutomaton)
+        val automatonA = Automaton.ofString("A")
+        val automatonAopt = automatonA.opt().then(eofAutomaton).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automatonAopt.consume(StringCodePointReader("")) is ParseSuccess)

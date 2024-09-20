@@ -24,6 +24,10 @@ interface CodePointSequence {
     fun toReader(): PositionReader
 
     companion object {
+        fun fromCodePoint(vararg codepoint: Int): CodePointSequence {
+            TODO()
+        }
+
         fun CharSequence.asCodePointSequence(): CodePointSequence {
             val charSequence = this
 

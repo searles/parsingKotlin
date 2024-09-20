@@ -7,28 +7,27 @@ import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 import at.searles.parsing.utils.IntRangeMap
 
-class Node<A>(
-    var labels: Set<A>? = null,
-    var edges: IntRangeMap<Node<A>> = IntRangeMap()
-) {
-    fun connectTo(values: IntRange, target: Node<A>) {
+class Node {
+    var labels: Set<Label>? = null
+    var edges: IntRangeMap<Node> = IntRangeMap()
+
+    fun connectTo(values: IntRange, target: Node) {
         edges.add(values, target) { _, _ -> error("No overlaps allowed in DFA") }
     }
 }
 
-class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<Node<A>>): Consumer<Set<A>> {
+class Automaton(private val startNode: Node, private val finalNodes: Set<Node>): Consumer<Set<Label>> {
     init {
         val nodes = collectNodes(startNode)
         require(finalNodes.all { it in nodes })
-        require(nodes.all { it.labels == null && it !in finalNodes || it.labels != null && it in finalNodes })
     }
 
-    override fun consume(reader: PositionReader): ParseResult<Set<A>> {
+    override fun consume(reader: PositionReader): ParseResult<Set<Label>> {
         val start = reader.position
         var mark = -1L
-        var labels: Set<A>? = null
+        var labels: Set<Label>? = null
 
-        var node: Node<A>? = startNode
+        var node: Node? = startNode
 
         while (node != null) {
             if (node.labels != null) {
@@ -51,16 +50,39 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         }
     }
 
-    fun applyLabel(labels: A): Automaton<A> {
+    fun applyLabel(label: Label): Automaton {
         finalNodes.forEach {
-            require(it.labels!!.isEmpty())
-            it.labels = setOf(labels)
+            require(it.labels == null)
+            it.labels = setOf(label)
         }
 
         return this
     }
 
-    fun or(other: Automaton<A>): Automaton<A> {
+    fun findEquivalentLabel(label: Label): Label? {
+        val distinctLabels = finalNodes
+            .asSequence()
+            .mapNotNull { it.labels }
+            .filter { label !in it }
+            .flatten()
+            .toSet()
+
+        return finalNodes
+            .asSequence()
+            .mapNotNull { it.labels }
+            .filter { label in it }
+            .reduce { acc, set -> acc.intersect(set) }
+            .minus(distinctLabels)
+            .firstOrNull { it != label }
+    }
+
+    fun removeLabel(label: Label) {
+        finalNodes.filter { label in it.labels!! }.forEach {
+            it.labels = it.labels!! - setOf(label)
+        }
+    }
+
+    fun or(other: Automaton): Automaton {
         return DfaFactory(
             startNodes = setOf(startNode, other.startNode),
             finalNodes = finalNodes + other.finalNodes,
@@ -68,7 +90,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun then(other: Automaton<A>): Automaton<A> {
+    fun then(other: Automaton): Automaton {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = other.finalNodes,
@@ -76,7 +98,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun plus(): Automaton<A> {
+    fun plus(): Automaton {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = finalNodes,
@@ -84,7 +106,7 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
         ).create()
     }
 
-    fun opt(): Automaton<A> {
+    fun opt(): Automaton {
         return DfaFactory(
             startNodes = setOf(startNode),
             finalNodes = finalNodes + startNode,
@@ -93,14 +115,14 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
     }
 
     companion object {
-        fun <A> nothing(): Automaton<A> {
-            val node = Node<A>()
+        fun nothing(): Automaton {
+            val node = Node()
             return Automaton(node, emptySet())
         }
 
-        fun <A> ofRange(vararg values: IntRange): Automaton<A> {
-            val q0 = Node<A>()
-            val q1 = Node<A>(labels = emptySet())
+        fun ofRange(vararg values: IntRange): Automaton {
+            val q0 = Node()
+            val q1 = Node()
 
             withoutOverlaps(values).forEach {
                 q0.connectTo(it, q1)
@@ -126,12 +148,12 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
             return result
         }
 
-        fun <A> ofString(string: String): Automaton<A> {
-            val finalNode = Node<A>(emptySet())
+        fun ofString(string: String): Automaton {
+            val finalNode = Node()
             var node = finalNode
 
             string.reversed().codePoints().forEach { codePoint ->
-                node = Node<A>().apply {
+                node = Node().apply {
                     connectTo(codePoint .. codePoint, node)
                 }
             }
@@ -139,9 +161,9 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
             return Automaton(node, setOf(finalNode))
         }
 
-        private fun <A> collectNodes(startNode: Node<A>): Set<Node<A>> {
+        private fun collectNodes(startNode: Node): Set<Node> {
             val processingQueue = mutableListOf(startNode)
-            val nodes = mutableSetOf<Node<A>>()
+            val nodes = mutableSetOf<Node>()
 
             while (processingQueue.isNotEmpty()) {
                 val node = processingQueue.removeLast()
@@ -156,12 +178,12 @@ class Automaton<A>(private val startNode: Node<A>, private val finalNodes: Set<N
     }
 }
 
-class DfaFactory<A>(startNodes: Set<Node<A>>, private val finalNodes: Set<Node<A>>, private val epsilonEdges: Map<Node<A>, Set<Node<A>>>) {
+class DfaFactory(startNodes: Set<Node>, private val finalNodes: Set<Node>, private val epsilonEdges: Map<Node, Set<Node>>) {
     private val startNodeSet = withEpsilonTransitions(startNodes)
-    private val nodeProcessingQueue = mutableListOf<Set<Node<A>>>()
-    private val connections = mutableMapOf<Set<Node<A>>, IntRangeMap<Set<Node<A>>>>()
+    private val nodeProcessingQueue = mutableListOf<Set<Node>>()
+    private val connections = mutableMapOf<Set<Node>, IntRangeMap<Set<Node>>>()
 
-    fun create(): Automaton<A> {
+    fun create(): Automaton {
         nodeProcessingQueue.add(startNodeSet)
 
         while (nodeProcessingQueue.isNotEmpty()) {
@@ -173,9 +195,11 @@ class DfaFactory<A>(startNodes: Set<Node<A>>, private val finalNodes: Set<Node<A
         return generateAutomaton()
     }
 
-    private fun generateAutomaton(): Automaton<A> {
+    private fun generateAutomaton(): Automaton {
         val newNodes = connections.keys.associateWith { nodeSet ->
-            Node(getLabels(nodeSet))
+            Node().apply {
+                labels = getLabels(nodeSet)
+            }
         }
 
         for (edge in connections) {
@@ -190,15 +214,15 @@ class DfaFactory<A>(startNodes: Set<Node<A>>, private val finalNodes: Set<Node<A
         return Automaton(startNode, finalNodes)
     }
 
-    private fun getLabels(nodes: Set<Node<A>>): Set<A>? {
-        if (nodes.any { it in finalNodes }) {
+    private fun getLabels(nodes: Set<Node>): Set<Label>? {
+        if (nodes.any { it in finalNodes && it.labels?.isNotEmpty() == true }) {
             return nodes.flatMap { it.labels ?: emptyList() }.toSet()
         }
 
         return null
     }
 
-    private fun processNodeSet(nodeSet: Set<Node<A>>) {
+    private fun processNodeSet(nodeSet: Set<Node>) {
         // Contract: nodeSet is closed under epsilon connections
         if (connections.containsKey(nodeSet)) {
             return
@@ -209,8 +233,8 @@ class DfaFactory<A>(startNodes: Set<Node<A>>, private val finalNodes: Set<Node<A
         nodeProcessingQueue.addAll(edges.values)
     }
 
-    private fun getEdges(nodeSet: Set<Node<A>>): IntRangeMap<Set<Node<A>>> {
-        val newEdges = IntRangeMap<Set<Node<A>>>()
+    private fun getEdges(nodeSet: Set<Node>): IntRangeMap<Set<Node>> {
+        val newEdges = IntRangeMap<Set<Node>>()
 
         for (node in nodeSet) {
             newEdges.add(node.edges.mapValues { setOf(it) }) { set0, set1 -> set0 + set1 }
@@ -219,9 +243,9 @@ class DfaFactory<A>(startNodes: Set<Node<A>>, private val finalNodes: Set<Node<A
         return newEdges.mapValues { withEpsilonTransitions(it) }
     }
 
-    private fun withEpsilonTransitions(nodeSet: Set<Node<A>>): Set<Node<A>> {
-        val nodeList = mutableListOf<Node<A>>().apply { addAll(nodeSet) }
-        val closure = mutableSetOf<Node<A>>()
+    private fun withEpsilonTransitions(nodeSet: Set<Node>): Set<Node> {
+        val nodeList = mutableListOf<Node>().apply { addAll(nodeSet) }
+        val closure = mutableSetOf<Node>()
 
         while (nodeList.isNotEmpty()) {
             val node = nodeList.removeLast()

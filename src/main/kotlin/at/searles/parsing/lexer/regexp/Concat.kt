@@ -3,8 +3,8 @@ package at.searles.parsing.lexer.regexp
 import at.searles.parsing.lexer.Automaton
 
 class Concat(val first: Regexp, val second: Regexp): Regexp {
-    override fun <A> toAutomaton(): Automaton<A> {
-        return first.toAutomaton<A>().then(second.toAutomaton())
+    override fun toAutomaton(): Automaton {
+        return first.toAutomaton().then(second.toAutomaton())
     }
 
     override fun toString(): String {

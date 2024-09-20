@@ -3,7 +3,7 @@ package at.searles.parsing.lexer.regexp
 import at.searles.parsing.lexer.Automaton
 
 class Plus(private val regexp: Regexp): Regexp {
-    override fun <A> toAutomaton(): Automaton<A> {
-        return regexp.toAutomaton<A>().plus()
+    override fun toAutomaton(): Automaton {
+        return regexp.toAutomaton().plus()
     }
 }

@@ -1,36 +1,41 @@
 package at.searles.parsing.parser.arithmetics
 
+import at.searles.parsing.lexer.Lexer
+import at.searles.parsing.lexer.WithLexer
+import at.searles.parsing.lexer.regexp.Plus
+import at.searles.parsing.lexer.regexp.Ranges
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
-import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
-object MathParser {
-    private val number = LexParser(SyntaxLabel.Number, SyntaxConsumer.lexer) + Converter { num(it) }
+object MathParser: WithLexer {
+    override val lexer: Lexer = Lexer()
+
+    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + MapAction { num(it) }
 
     val simpleArithmetic = number + (
-            kw(SyntaxLabel.Plus)  + number + Fold { left: Int, right: Int -> left + right } or
-            kw(SyntaxLabel.Minus) + number + Fold { left: Int, right: Int -> left - right }
+            "+".recognizer  + number + FoldAction { left: Int, right: Int -> left + right } or
+            "-".recognizer + number + FoldAction { left: Int, right: Int -> left - right }
     )
 
     val expr: Parser<Int> = self { sum }
 
     private val terminal = number or
-            kw(SyntaxLabel.Open) + expr + kw(SyntaxLabel.Close)
+            "(".recognizer + expr + ")".recognizer
 
     private val literal = self {
-            kw(SyntaxLabel.Minus) + it + Converter { value: Int -> -value } or
+            "-".recognizer + it + MapAction { value: Int -> -value } or
             terminal
     }
 
     private val prod = literal + (
-            kw(SyntaxLabel.Times) + literal + Fold { left: Int, right: Int -> left * right } or
-            kw(SyntaxLabel.Div) + literal + Fold { left: Int, right: Int -> left / right }
+            "*".recognizer + literal + FoldAction { left: Int, right: Int -> left * right } or
+            "/".recognizer + literal + FoldAction { left: Int, right: Int -> left / right }
     ).rep()
 
     private val sum = prod + (
-        kw(SyntaxLabel.Plus) + prod + Fold { left: Int, right: Int -> left + right } or
-        kw(SyntaxLabel.Minus) + prod + Fold { left: Int, right: Int -> left - right }
+        "+".recognizer + prod + FoldAction { left: Int, right: Int -> left + right } or
+        "-".recognizer + prod + FoldAction { left: Int, right: Int -> left - right }
     ).rep()
 
     fun num(seq: CodePointSequence): Int {
@@ -42,9 +47,5 @@ object MathParser {
             cp = seq[++index]
         }
         return n
-    }
-
-    fun kw(label: SyntaxLabel): Recognizer {
-        return LexRecognizer(label, SyntaxConsumer.lexer) { label.text.asCodePointSequence() }
     }
 }

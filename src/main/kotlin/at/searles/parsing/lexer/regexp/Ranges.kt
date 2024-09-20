@@ -3,7 +3,7 @@ package at.searles.parsing.lexer.regexp
 import at.searles.parsing.lexer.Automaton
 
 class Ranges(private vararg val ranges: IntRange) : Regexp {
-    override fun <A> toAutomaton(): Automaton<A> {
+    override fun toAutomaton(): Automaton {
         return Automaton.ofRange(*ranges)
     }
 

@@ -6,7 +6,7 @@ import at.searles.parsing.ParseSuccess
 import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 
-class ConsumerReader(delegate: PositionReader): PositionReader by delegate {
+class CachingReader(delegate: PositionReader): PositionReader by delegate {
     private var lastConsumer: Consumer<*>? = null
     private lateinit var lastResult: ParseResult<*>
 

@@ -1,5 +1,6 @@
 package at.searles.parsing
 
+import at.searles.parsing.parser.PartialPrintSuccess
 import at.searles.parsing.reader.CodePointSequence
 
 sealed interface PrintResult {

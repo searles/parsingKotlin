@@ -17,5 +17,9 @@ interface Reducer<A, B> {
         inline fun <reified A> Reducer<A, A>.rep(): Reducer<A, A> {
             return RepeatReducer(this)
         }
+
+        inline fun <reified A> Reducer<A, A>.opt(): Reducer<A, A> {
+            return RepeatReducer(this)
+        }
     }
 }

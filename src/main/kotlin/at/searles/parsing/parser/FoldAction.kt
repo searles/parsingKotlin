@@ -2,7 +2,7 @@ package at.searles.parsing.parser
 
 import at.searles.parsing.InvertResult
 
-fun interface Fold<A, B, C> {
+fun interface FoldAction<A, B, C> {
     fun fold(left: A, right: B): C
 
     fun leftInverse(result: C): InvertResult<A> {

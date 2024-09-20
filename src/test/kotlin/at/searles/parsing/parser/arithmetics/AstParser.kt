@@ -3,36 +3,43 @@ package at.searles.parsing.parser.arithmetics
 import at.searles.parsing.InvertFailure
 import at.searles.parsing.InvertResult
 import at.searles.parsing.InvertSuccess
+import at.searles.parsing.lexer.LexParser
+import at.searles.parsing.lexer.Lexer
+import at.searles.parsing.lexer.WithLexer
+import at.searles.parsing.lexer.regexp.Plus
+import at.searles.parsing.lexer.regexp.Ranges
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
-object AstParser {
-    private val number = LexParser(SyntaxLabel.Number, SyntaxConsumer.lexer) + num()
+object AstParser: WithLexer {
+    override val lexer: Lexer = Lexer()
+
+    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + num()
 
     val expr: Parser<Node> = self { sum }
 
     private val terminal = number or
-            MathParser.kw(SyntaxLabel.Open) + expr + MathParser.kw(SyntaxLabel.Close)
+            "(".recognizer + expr + ")".recognizer
 
     private val literal = self {
-        MathParser.kw(SyntaxLabel.Minus) + it + convert("-") or
+        "-".recognizer + it + convert("-") or
         terminal
     }
 
     private val prod = literal + (
-            MathParser.kw(SyntaxLabel.Times) + literal + branch("*") or
-            MathParser.kw(SyntaxLabel.Div) + literal + branch("/")
+            "*".recognizer + literal + branch("*") or
+                    "/".recognizer + literal + branch("/")
     ).rep()
 
     private val sum = prod + (
-            MathParser.kw(SyntaxLabel.Plus) + prod + branch("+") or
-            MathParser.kw(SyntaxLabel.Minus) + prod + branch("-")
+            "+".recognizer + prod + branch("+") or
+            "-".recognizer + prod + branch("-")
     ).rep()
 
-    private fun num(): Converter<CodePointSequence, Node> {
-        return object: Converter<CodePointSequence, Node> {
+    private fun num(): MapAction<CodePointSequence, Node> {
+        return object: MapAction<CodePointSequence, Node> {
             override fun convert(value: CodePointSequence): Node {
                 return Node.Num(MathParser.num(value))
             }
@@ -46,8 +53,8 @@ object AstParser {
         }
     }
 
-    private fun convert(op: String): Converter<Node, Node> {
-        return object: Converter<Node, Node> {
+    private fun convert(op: String): MapAction<Node, Node> {
+        return object: MapAction<Node, Node> {
             override fun convert(value: Node): Node {
                 return value.apply(op)
             }
@@ -64,8 +71,8 @@ object AstParser {
         }
     }
 
-    private fun branch(op: String): Fold<Node, Node, Node> {
-        return object: Fold<Node, Node, Node> {
+    private fun branch(op: String): FoldAction<Node, Node, Node> {
+        return object: FoldAction<Node, Node, Node> {
             override fun fold(left: Node, right: Node): Node {
                 return left.apply(op, right)
             }

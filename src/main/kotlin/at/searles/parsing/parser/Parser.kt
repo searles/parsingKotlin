@@ -13,16 +13,16 @@ interface Parser<A> {
         return ParserThenReducer(this, reducer)
     }
 
-    operator fun <A0, C> plus(fold: Fold<A0, A, C>): Reducer<A0, C> {
-        return ParserThenFold(this, fold)
-    }
-
-    operator fun <B> plus(converter: Converter<A, B>): Parser<B> {
-        return ParserThenConverter(this, converter)
+    operator fun <A0, C> plus(foldAction: FoldAction<A0, A, C>): Reducer<A0, C> {
+        return ParserThenFold(this, foldAction)
     }
 
     operator fun plus(recognizer: Recognizer): Parser<A> {
         return ParserThenRecognizer(this, recognizer)
+    }
+
+    operator fun plus(consumeAction: ConsumeAction<A>): Recognizer {
+        return ParserThenConsume(this, consumeAction)
     }
 
     infix fun or(other: Parser<A>): Parser<A> {
