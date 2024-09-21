@@ -3,16 +3,21 @@ package at.searles.parsing.lexer
 import at.searles.parsing.ParseFailure
 import at.searles.parsing.ParseResult
 import at.searles.parsing.ParseSuccess
+import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 import at.searles.parsing.utils.IntRangeMap
 
-class Node {
+class Node(private val name: String) {
     var labels: Set<Label>? = null
     var edges: IntRangeMap<Node> = IntRangeMap()
 
     fun connectTo(values: IntRange, target: Node) {
         edges.add(values, target) { _, _ -> error("No overlaps allowed in DFA") }
+    }
+
+    override fun toString(): String {
+        return name
     }
 }
 
@@ -116,13 +121,13 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
 
     companion object {
         fun nothing(): Automaton {
-            val node = Node()
+            val node = Node("q0")
             return Automaton(node, emptySet())
         }
 
         fun ofRange(vararg values: IntRange): Automaton {
-            val q0 = Node()
-            val q1 = Node()
+            val q0 = Node("q0")
+            val q1 = Node("q1")
 
             withoutOverlaps(values).forEach {
                 q0.connectTo(it, q1)
@@ -149,16 +154,19 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
         }
 
         fun ofString(string: String): Automaton {
-            val finalNode = Node()
-            var node = finalNode
+            var count = 0
 
-            string.reversed().codePoints().forEach { codePoint ->
-                node = Node().apply {
-                    connectTo(codePoint .. codePoint, node)
+            var node = Node("q0")
+
+            string.asCodePointSequence().toReader().fold(node) {
+                n, cp -> run {
+                    node = Node("q${count++}")
+                    n.connectTo(cp .. cp, node)
+                    node
                 }
             }
 
-            return Automaton(node, setOf(finalNode))
+            return Automaton(node, setOf(node))
         }
 
         private fun collectNodes(startNode: Node): Set<Node> {
@@ -196,8 +204,9 @@ class DfaFactory(startNodes: Set<Node>, private val finalNodes: Set<Node>, priva
     }
 
     private fun generateAutomaton(): Automaton {
+        var count = 0
         val newNodes = connections.keys.associateWith { nodeSet ->
-            Node().apply {
+            Node("q${count++}").apply {
                 labels = getLabels(nodeSet)
             }
         }

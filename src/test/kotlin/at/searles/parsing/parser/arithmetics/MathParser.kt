@@ -6,12 +6,11 @@ import at.searles.parsing.lexer.regexp.Plus
 import at.searles.parsing.lexer.regexp.Ranges
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
-import at.searles.parsing.reader.CodePointSequence
 
 object MathParser: WithLexer {
     override val lexer: Lexer = Lexer()
 
-    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + MapAction { num(it) }
+    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + MapAction { it.toReader().fold(0) { value, digit -> value * 10 + digit - '0'.code }  }
 
     val simpleArithmetic = number + (
             "+".recognizer  + number + FoldAction { left: Int, right: Int -> left + right } or
@@ -37,15 +36,4 @@ object MathParser: WithLexer {
         "+".recognizer + prod + FoldAction { left: Int, right: Int -> left + right } or
         "-".recognizer + prod + FoldAction { left: Int, right: Int -> left - right }
     ).rep()
-
-    fun num(seq: CodePointSequence): Int {
-        var n = 0
-        var index = 0
-        var cp = seq[index]
-        while (cp != -1) {
-            n = n * 10 + cp - '0'.code
-            cp = seq[++index]
-        }
-        return n
-    }
 }

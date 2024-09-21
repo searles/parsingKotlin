@@ -12,40 +12,42 @@ class IntRangeMap<A> {
 
     fun add(range: IntRange, value: A, mergeFn: (A, A) -> A = { _, _ -> error("Intersection not supported") }) {
         // Basic binary search
-        var pos = find(range.first)
+        var index = find(range.first)
 
-        var start = range.first
-        val end = range.last + 1
+        // The range that we want to add:
+        var position = range.first
+        val last = range.last
 
-        while(start < end) {
-            if(pos == entries.size) {
-                entries.add(Entry((start until end), value))
+        while(position <= last) {
+            if(index == entries.size) {
+                entries.add(Entry(position .. last, value))
                 return
             }
 
-            val entry = entries[pos]
+            val entry = entries[index]
 
-            if (start < entry.range.first) {
-                val nextEnd = min(end, entry.range.first)
-                entries.add(pos, Entry((start until nextEnd), value))
+            if (position < entry.range.first) {
+                val nextLast = min(last, entry.range.first - 1)
+                entries.add(index, Entry(position .. nextLast, value))
+                index ++
+                position = nextLast + 1
+            } else if (position == entry.range.first) {
+                val nextLast = min(last, entry.range.last)
+                val newEntry = Entry(position .. nextLast, mergeFn(entry.value, value))
+                position = nextLast + 1
 
-                start = nextEnd
-                pos++
-            } else if (start == entry.range.first) {
-                if (end < entry.range.last + 1) {
-                    entries.add(pos, Entry((start until end), mergeFn(entry.value, value)))
-                    entries[pos + 1] = Entry((end .. entry.range.last), entry.value)
-                    start = end
+                if (position <= entry.range.last) {
+                    entries.add(index, newEntry)
+                    entries[index + 1] = Entry(position .. entry.range.last, entry.value)
                 } else {
-                    entries[pos] = Entry((start .. entry.range.last), mergeFn(entry.value, value))
-                    start = entry.range.last + 1
-                    pos++
+                    entries[index] = newEntry
                 }
+
+                index ++
             } else {
-                require(start < entry.range.last + 1) { "bug in binary search: $start, ${entry.range}" }
-                entries.add(pos, Entry((entry.range.first until start), entry.value))
-                entries[pos + 1] = Entry((start .. entry.range.last), entry.value)
-                pos++
+                entries.add(index, Entry(entry.range.first..< position, entry.value))
+                entries[index + 1] = Entry((position .. entry.range.last), entry.value)
+                index ++
             }
         }
     }
@@ -87,7 +89,7 @@ class IntRangeMap<A> {
 
             when {
                 value < entries[m].range.first -> r = m
-                entries[m].range.last + 1 <= value -> l = m + 1
+                entries[m].range.last < value -> l = m + 1
                 else -> return m
             }
         }

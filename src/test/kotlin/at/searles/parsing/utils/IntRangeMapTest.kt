@@ -1,5 +1,6 @@
 package at.searles.parsing.utils
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -95,5 +96,12 @@ class IntRangeMapTest {
         assertEquals("C", rangeMap[5])
         assertEquals("D", rangeMap[7])
         assertNull(rangeMap[9])
+    }
+
+    @Test
+    fun testOuterBounds() {
+        val rangeMap = IntRangeMap<String>()
+        rangeMap.add(0 .. Int.MAX_VALUE, "a")
+        Assertions.assertNotNull(rangeMap[10])
     }
 }

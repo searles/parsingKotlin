@@ -3,7 +3,6 @@ package at.searles.parsing.parser.arithmetics
 import at.searles.parsing.InvertFailure
 import at.searles.parsing.InvertResult
 import at.searles.parsing.InvertSuccess
-import at.searles.parsing.lexer.LexParser
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Plus
@@ -41,7 +40,7 @@ object AstParser: WithLexer {
     private fun num(): MapAction<CodePointSequence, Node> {
         return object: MapAction<CodePointSequence, Node> {
             override fun convert(value: CodePointSequence): Node {
-                return Node.Num(MathParser.num(value))
+                return Node.Num(value.toReader().fold(0) { num, digit -> num * 10 + digit - '0'.code })
             }
 
             override fun invert(result: Node): InvertResult<CodePointSequence> {

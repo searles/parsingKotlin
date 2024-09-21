@@ -14,25 +14,25 @@ import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
-class RegexpGrammar: WithLexer {
+object RegexpGrammar: WithLexer {
     override val lexer = Lexer()
     
     val regexp = self { expression }
 
-    private val expression: Parser<Regexp> by lazy { term + ("|".recognizer + term + Alternation).rep() }
+    val expression: Parser<Regexp> by lazy { self { term + ("|".recognizer + term + Alternation).rep() } }
 
-    private val term by lazy { factor + (factor + Concatenation).rep() }
+    val term by lazy { factor + (factor + Concatenation).rep() }
 
-    private val factor by lazy { base + quantifier }
+    val factor by lazy { base + quantifier }
 
-    private val base by lazy {
+    val base by lazy {
         ".".recognizer + AllChars or
                 "[".recognizer + characterClass + "]".recognizer + CharClassToCodePoint or
                 "(".recognizer + expression + ")".recognizer or
                 singleChar + CodePoint
     }
 
-    private val quantifier: Reducer<Regexp, Regexp> by lazy {
+    val quantifier: Reducer<Regexp, Regexp> by lazy {
         "*".recognizer + MapAction<Regexp, Regexp> { it.rep() } or
                 "+".recognizer + MapAction { it.plus() } or
                 "?".recognizer + MapAction { it.opt() } /*or
@@ -41,27 +41,26 @@ class RegexpGrammar: WithLexer {
                 "{".recognizer + number + ",".recognizer + number + "}".recognizer*/
     }
 
-    private val characterClass by lazy {
+    val characterClass by lazy {
         "^".recognizer + characterRanges + InvertRanges or
                 characterRanges
     }
 
-    private val characterRanges by lazy {
+    val characterRanges by lazy {
         emptyList<IntRange>() + (characterRange + append()).rep() // TODO Allow count (min = 1)
     }
 
-    private val characterRange by lazy {
+    val characterRange by lazy {
         singleChar + (
                 ("-".recognizer + singleChar + CreateRange) or
                         CharAsRange
         )
     }
 
-    private val singleChar by lazy {
+    val singleChar by lazy {
         specialChar.parser + SpecialChar or
         character.parser + Char
     }
-
 
     fun <A> emptyList(): InitAction<List<A>> {
         return object : InitAction<List<A>> {
