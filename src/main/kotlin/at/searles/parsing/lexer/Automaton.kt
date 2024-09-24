@@ -7,6 +7,7 @@ import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 import at.searles.parsing.reader.Consumer
 import at.searles.parsing.reader.PositionReader
 import at.searles.parsing.utils.IntRangeMap
+import java.lang.StringBuilder
 
 class Node(private val name: String) {
     var labels: Set<Label>? = null
@@ -25,6 +26,19 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
     init {
         val nodes = collectNodes(startNode)
         require(finalNodes.all { it in nodes })
+    }
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        addNodeToString(startNode, sb, mutableSetOf())
+        return sb.toString()
+    }
+
+    private fun addNodeToString(node: Node, sb: StringBuilder, history: MutableSet<Node>) {
+        if (node in history) return
+        history.add(node)
+        sb.append("$node -> {${node.edges}}\n")
+        node.edges.values.forEach { addNodeToString(it, sb, history)}
     }
 
     override fun consume(reader: PositionReader): ParseResult<Set<Label>> {
@@ -125,7 +139,12 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
             return Automaton(node, emptySet())
         }
 
-        fun ofRange(vararg values: IntRange): Automaton {
+        fun empty(): Automaton {
+            val node = Node("q0")
+            return Automaton(node, setOf(node))
+        }
+
+        fun ofRange(values: List<IntRange>): Automaton {
             val q0 = Node("q0")
             val q1 = Node("q1")
 
@@ -136,7 +155,7 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
             return Automaton(q0, setOf(q1))
         }
 
-        private fun withoutOverlaps(values: Array<out IntRange>): List<IntRange> {
+        private fun withoutOverlaps(values: List<IntRange>): List<IntRange> {
             if (values.isEmpty()) return emptyList()
 
             val result = mutableListOf<IntRange>()
@@ -154,11 +173,13 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
         }
 
         fun ofString(string: String): Automaton {
-            var count = 0
 
-            var node = Node("q0")
+            val startNode = Node("q0")
 
-            string.asCodePointSequence().toReader().fold(node) {
+            var count = 1
+            var node = startNode
+
+            string.asCodePointSequence().toReader().fold(startNode) {
                 n, cp -> run {
                     node = Node("q${count++}")
                     n.connectTo(cp .. cp, node)
@@ -166,7 +187,7 @@ class Automaton(private val startNode: Node, private val finalNodes: Set<Node>):
                 }
             }
 
-            return Automaton(node, setOf(node))
+            return Automaton(startNode, setOf(node))
         }
 
         private fun collectNodes(startNode: Node): Set<Node> {

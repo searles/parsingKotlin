@@ -4,13 +4,14 @@ import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Plus
 import at.searles.parsing.lexer.regexp.Ranges
+import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 
 object MathParser: WithLexer {
     override val lexer: Lexer = Lexer()
 
-    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + MapAction { it.toReader().fold(0) { value, digit -> value * 10 + digit - '0'.code }  }
+    private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + MapAction { it.toReader().fold(0) { value, digit -> value * 10 + digit - '0'.code }  }
 
     val simpleArithmetic = number + (
             "+".recognizer  + number + FoldAction { left: Int, right: Int -> left + right } or

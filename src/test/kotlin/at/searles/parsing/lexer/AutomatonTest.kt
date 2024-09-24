@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class AutomatonTest {
-    private val eofAutomaton = Automaton.ofRange(-1 .. -1)
+    private val eofAutomaton = Automaton.ofRange(listOf(-1 .. -1))
 
     @Test
     fun testAutomatonFromString() {
@@ -26,7 +26,7 @@ class AutomatonTest {
     @Test
     fun testAutomatonFromRange() {
         // Arrange
-        val automaton = Automaton.ofRange('A'.code .. 'C'.code, 'G'.code .. 'I'.code, 'B'.code .. 'D'.code).applyLabel(Label(0))
+        val automaton = Automaton.ofRange(listOf('A'.code .. 'C'.code, 'G'.code .. 'I'.code, 'B'.code .. 'D'.code)).applyLabel(Label(0))
 
         // Act / Assert
         Assertions.assertTrue(automaton.consume(StringCodePointReader("0")) is ParseFailure)

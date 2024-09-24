@@ -25,7 +25,7 @@ interface CodePointSequence {
 
     companion object {
         fun fromCodePoint(vararg codepoint: Int): CodePointSequence {
-            TODO()
+            return IntArrayCodePointSequence(*codepoint)
         }
 
         fun CharSequence.asCodePointSequence(): CodePointSequence {

@@ -14,12 +14,12 @@ interface Reducer<A, B> {
     }
 
     companion object {
-        inline fun <reified A> Reducer<A, A>.rep(): Reducer<A, A> {
-            return RepeatReducer(this)
+        inline fun <reified A> Reducer<A, A>.rep(minCount: Int = 0, maxCount: Int? = null): Reducer<A, A> {
+            return RepeatReducer(this, minCount, maxCount)
         }
 
         inline fun <reified A> Reducer<A, A>.opt(): Reducer<A, A> {
-            return RepeatReducer(this)
+            return RepeatReducer(this, 0, 1)
         }
     }
 }

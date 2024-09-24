@@ -2,12 +2,12 @@ package at.searles.parsing.lexer.regexp
 
 import at.searles.parsing.lexer.Automaton
 
-class Concat(val first: Regexp, val second: Regexp): Regexp {
+class Concat(val left: Regexp, val right: Regexp): Regexp {
     override fun toAutomaton(): Automaton {
-        return first.toAutomaton().then(second.toAutomaton())
+        return left.toAutomaton().then(right.toAutomaton())
     }
 
     override fun toString(): String {
-        return "$first$second"
+        return "$left$right"
     }
 }

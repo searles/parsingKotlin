@@ -5,40 +5,33 @@ import at.searles.parsing.InvertResult
 import at.searles.parsing.InvertSuccess
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
-import at.searles.parsing.lexer.regexp.Concat
-import at.searles.parsing.lexer.regexp.Ranges
-import at.searles.parsing.lexer.regexp.Regexp
-import at.searles.parsing.lexer.regexp.Text
+import at.searles.parsing.lexer.regexp.*
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
-import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
 object RegexpGrammar: WithLexer {
     override val lexer = Lexer()
     
     val regexp = self { expression }
 
-    val expression: Parser<Regexp> by lazy { self { term + ("|".recognizer + term + Alternation).rep() } }
+    val expression: Parser<Regexp> by lazy { self { term + ("|".recognizer + term + FoldAction<Regexp, Regexp, Regexp> { r0, r1 -> r0 or r1}).rep() } }
 
-    val term by lazy { factor + (factor + Concatenation).rep() }
+    val term by lazy { factor + (factor + FoldAction<Regexp, Regexp, Regexp> { r0, r1 -> r0 + r1}).rep() }
 
-    val factor by lazy { base + quantifier }
+    val factor by lazy { base + quantifier.rep() }
 
     val base by lazy {
-        ".".recognizer + AllChars or
-                "[".recognizer + characterClass + "]".recognizer + CharClassToCodePoint or
-                "(".recognizer + expression + ")".recognizer or
-                singleChar + CodePoint
+        ".".recognizer + InitAction { Regexp.ranges(0 .. Int.MAX_VALUE) } or
+                "[".recognizer + characterClass + "]".recognizer + MapAction { Regexp.ranges(it) } or
+                singleChar + MapAction { Regexp.chars(it) } or
+                "(".recognizer + expression + ")".recognizer
     }
 
     val quantifier: Reducer<Regexp, Regexp> by lazy {
         "*".recognizer + MapAction<Regexp, Regexp> { it.rep() } or
                 "+".recognizer + MapAction { it.plus() } or
-                "?".recognizer + MapAction { it.opt() } /*or
-                "{".recognizer + number + "}".recognizer or
-                "{".recognizer + number + ",".recognizer + "}".recognizer or
-                "{".recognizer + number + ",".recognizer + number + "}".recognizer*/
+                "?".recognizer + MapAction { it.opt() }
     }
 
     val characterClass by lazy {
@@ -47,19 +40,19 @@ object RegexpGrammar: WithLexer {
     }
 
     val characterRanges by lazy {
-        emptyList<IntRange>() + (characterRange + append()).rep() // TODO Allow count (min = 1)
+        emptyList<IntRange>() + (characterRange + append()).rep(1)
     }
 
     val characterRange by lazy {
         singleChar + (
-                ("-".recognizer + singleChar + CreateRange) or
-                        CharAsRange
+                ("-".recognizer + singleChar + FoldAction<Int, Int, IntRange> { first, last -> first .. last } ) or
+                        MapAction { it .. it }
         )
     }
 
     val singleChar by lazy {
         specialChar.parser + SpecialChar or
-        character.parser + Char
+        character.parser + MapAction { it[0] }
     }
 
     fun <A> emptyList(): InitAction<List<A>> {
@@ -99,19 +92,6 @@ object RegexpGrammar: WithLexer {
         }
     }
 
-
-//    abstract inner class Lex(regexp: Regexp? = null, txt: String? = null) {
-//        fun init() {
-//            if (regexp != null) {
-//                lexer.add(regexp, this)
-//            } else if (txt != null) {
-//                lexer.add(Text(txt), this)
-//            }
-//        }
-//    }
-
-
-
     /*
     <regex>         ::= <expression>
 
@@ -133,9 +113,6 @@ object RegexpGrammar: WithLexer {
 <quantifier>    ::= '*'                           (* zero or more occurrences *)
                   | '+'                           (* one or more occurrences *)
                   | '?'                           (* zero or one occurrence *)
-                  | '{' <number> '}'              (* exact number of occurrences *)
-                  | '{' <number> ',' '}'          (* at least number of occurrences *)
-                  | '{' <number> ',' <number> '}' (* range of occurrences *)
 
 <character_class> ::= '^'? <character_range>+     (* character class with optional negation *)
 <character_range>  ::= <character> '-' <character> (* character range in a class, e.g., a-z *)
@@ -147,70 +124,12 @@ object RegexpGrammar: WithLexer {
 <number>        ::= digit+                        (* one or more digits *)
      */
 
-    val number = Ranges('0'.code .. '9'.code).plus()
-    val character = Ranges(0 .. Integer.MAX_VALUE)
-    val specialChar = Text("\\") + character // TODO uXXXX, UAAAAAAAA
-
-    object Alternation: FoldAction<Regexp, Regexp, Regexp> {
-        override fun fold(left: Regexp, right: Regexp): Regexp {
-            TODO("Not yet implemented")
-        }
-
-        override fun leftInverse(result: Regexp): InvertResult<Regexp> {
-            return super.leftInverse(result)
-        }
-
-        override fun rightInverse(result: Regexp): InvertResult<Regexp> {
-            return super.rightInverse(result)
-        }
-    }
-
-    object Concatenation: FoldAction<Regexp, Regexp, Regexp> {
-        override fun fold(left: Regexp, right: Regexp): Regexp {
-            return Concat(left, right)
-        }
-
-        override fun leftInverse(result: Regexp): InvertResult<Regexp> {
-            return super.leftInverse(result)
-        }
-
-        override fun rightInverse(result: Regexp): InvertResult<Regexp> {
-            return super.rightInverse(result)
-        }
-    }
-
-    object NumberToInt: MapAction<CodePointSequence, Int> {
-        override fun convert(value: CodePointSequence): Int {
-            return value.toReader().fold(0) { n, cp -> n * 10 + cp }
-        }
-
-        override fun invert(result: Int): InvertResult<CodePointSequence> {
-            return InvertSuccess(result.toString().asCodePointSequence())
-        }
-    }
-
-    object CharAsRange: MapAction<Int, IntRange> {
-        override fun convert(value: Int): IntRange {
-            return value .. value
-        }
-
-        override fun invert(result: IntRange): InvertResult<Int> {
-            return when {
-                result.first == result.last -> InvertSuccess(result.first)
-                else -> InvertFailure
-            }
-        }
-    }
-
-    object CharToCodePoint: MapAction<CodePointSequence, Int> {
-        override fun convert(value: CodePointSequence): Int {
-            return value[0]
-        }
-
-        override fun invert(result: Int): InvertResult<CodePointSequence> {
-            return InvertSuccess(CodePointSequence.fromCodePoint(result))
-        }
-    }
+    val number = Regexp.ranges('0'.code .. '9'.code).plus()
+    val hexDigit = Regexp.ranges('0'.code .. '9'.code, 'A'.code .. 'F'.code, 'a'.code .. 'f'.code)
+    val character = Regexp.ranges(0 .. Integer.MAX_VALUE)
+    val specialChar = Text("\\u") + hexDigit.count(4) or
+            Text("\\U") + hexDigit.count(8) or
+            Text("\\") + Regexp.chars('n'.code, 'r'.code, '.'.code, '\\'.code, '0'.code) // TODO more
 
     object InvertRanges: MapAction<List<IntRange>, List<IntRange>> {
         override fun convert(value: List<IntRange>): List<IntRange> {
@@ -231,56 +150,19 @@ object RegexpGrammar: WithLexer {
 
             return ranges
         }
-
-        override fun invert(result: List<IntRange>): InvertResult<List<IntRange>> {
-            return when (result.first().first) {
-                0 -> InvertSuccess(convert(result))
-                else -> InvertFailure
-            }
-        }
-    }
-
-    object CreateRange: FoldAction<Int, Int, IntRange> {
-        override fun fold(left: Int, right: Int): IntRange {
-            return IntRange(left, right)
-        }
-
-        override fun leftInverse(result: IntRange): InvertResult<Int> {
-            return InvertSuccess(result.first)
-        }
-
-        override fun rightInverse(result: IntRange): InvertResult<Int> {
-            return InvertSuccess(result.last)
-        }
-    }
-
-    object AllChars: InitAction<Regexp> {
-        override fun init(): Regexp {
-            return Ranges(0 .. Int.MAX_VALUE)
-        }
-    }
-
-    object CodePoint: MapAction<Int, Regexp> {
-        override fun convert(value: Int): Regexp {
-            return Ranges(value .. value)
-        }
     }
 
     object SpecialChar: MapAction<CodePointSequence, Int> {
         override fun convert(value: CodePointSequence): Int {
-            TODO("Not yet implemented")
-        }
-    }
-
-    object Char: MapAction<CodePointSequence, Int> {
-        override fun convert(value: CodePointSequence): Int {
-            return value[0]
-        }
-    }
-
-    object CharClassToCodePoint: MapAction<List<IntRange>, Regexp> {
-        override fun convert(value: List<IntRange>): Regexp {
-            return Ranges(*value.toTypedArray())
+            return when (value[1]) {
+                'u'.code -> value.toString().substring(2).toInt(16)
+                'U'.code -> value.toString().substring(2).toInt(16)
+                'n'.code -> '\n'.code
+                'r'.code -> '\r'.code
+                '0'.code -> 0
+                // TODO more
+                else -> value[1]
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ import at.searles.parsing.InvertSuccess
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Plus
-import at.searles.parsing.lexer.regexp.Ranges
+import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Reducer.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
@@ -15,7 +15,7 @@ import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 object AstParser: WithLexer {
     override val lexer: Lexer = Lexer()
 
-    private val number = Plus(Ranges('0'.code .. '9'.code)).parser + num()
+    private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + num()
 
     val expr: Parser<Node> = self { sum }
 

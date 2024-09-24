@@ -9,5 +9,7 @@ interface PositionReader : CodePointReader {
         return consumer.consume(this)
     }
 
+    // TODO Add events for eg comments and white chars
+
     fun getSequence(start: Long, end: Long): CodePointSequence
 }
