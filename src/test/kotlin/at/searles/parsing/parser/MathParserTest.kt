@@ -17,7 +17,7 @@ class MathParserTest {
         "100-1, 99"
     )    fun `WHEN given a simple arithmetic sum THEN the correct result is determined`(expr: String, expected: Int) {
         // Act
-        val result = MathParser.simpleArithmetic.parse(StringCodePointReader(expr))
+        val result = MathParser.simpleArithmetic.parse(Unit, StringCodePointReader(expr))
 
         // Assert
         Assertions.assertTrue(result is ParseSuccess)
@@ -38,7 +38,7 @@ class MathParserTest {
         val reader = StringCodePointReader(expr)
 
         // Act
-        val result = MathParser.expr.parse(reader)
+        val result = MathParser.expr.parse(Unit, reader)
 
         // Assert
         Assertions.assertEquals(-1, reader.read())

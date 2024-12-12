@@ -2,13 +2,11 @@ package at.searles.parsing.parser
 
 import at.searles.parsing.ParseFailure
 import at.searles.parsing.ParseSuccess
-import at.searles.parsing.PrintSuccess
 import at.searles.parsing.parser.arithmetics.AstParser
 import at.searles.parsing.reader.StringCodePointReader
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import kotlin.test.Test
 
 class AstParserTest {
     @ParameterizedTest
@@ -26,7 +24,7 @@ class AstParserTest {
         val reader = StringCodePointReader(expr)
 
         // Act
-        val result = AstParser.expr.parse(reader)
+        val result = AstParser.expr.parse(Unit, reader)
 
         // Assert
         Assertions.assertEquals(-1, reader.read())
@@ -48,7 +46,7 @@ class AstParserTest {
         val reader = StringCodePointReader(expr)
 
         // Act
-        val result = when (val ast = AstParser.expr.parse(reader)) {
+        val result = when (val ast = AstParser.expr.parse(Unit, reader)) {
             is ParseFailure -> Assertions.fail()
             is ParseSuccess -> AstParser.expr.print(ast.value)
         }

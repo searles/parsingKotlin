@@ -8,7 +8,9 @@ import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Plus
 import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
-import at.searles.parsing.parser.Reducer.Companion.rep
+import at.searles.parsing.parser.Parser.Companion.fold
+import at.searles.parsing.parser.Parser.Companion.passThough
+import at.searles.parsing.parser.Parser.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 
@@ -17,24 +19,24 @@ object AstParser: WithLexer {
 
     private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + num()
 
-    val expr: Parser<Node> = self { sum }
+    val expr: Parser<Unit, Node> = ref { sum }
 
     private val terminal = number or
-            "(".recognizer + expr + ")".recognizer
+            "(".recognizer + expr + ")".recognizer.passThough()
 
-    private val literal = self {
-        "-".recognizer + it + convert("-") or
+    private val literal: Parser<Unit, Node> by ref {
+        "-".recognizer + literal + convert("-") or
         terminal
     }
 
-    private val prod = literal + (
-            "*".recognizer + literal + branch("*") or
-                    "/".recognizer + literal + branch("/")
+    private val prod: Parser<Unit, Node> = literal + (
+            "*".recognizer.passThough<Node>() + literal.fold(branch("*")) or
+            "/".recognizer.passThough<Node>() + literal.fold(branch("/"))
     ).rep()
 
     private val sum = prod + (
-            "+".recognizer + prod + branch("+") or
-            "-".recognizer + prod + branch("-")
+            "+".recognizer.passThough<Node>() + prod.fold(branch("+")) or
+            "-".recognizer.passThough<Node>() + prod.fold(branch("-"))
     ).rep()
 
     private fun num(): MapAction<CodePointSequence, Node> {

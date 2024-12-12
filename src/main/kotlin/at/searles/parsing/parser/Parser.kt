@@ -1,31 +1,43 @@
 package at.searles.parsing.parser
 
-import at.searles.parsing.PrintResult
 import at.searles.parsing.ParseResult
 import at.searles.parsing.parser.combinators.*
 import at.searles.parsing.reader.PositionReader
 
-interface Parser<A> {
-    fun parse(reader: PositionReader): ParseResult<A>
-    fun print(value: A): PrintResult
+interface Parser<A, B> {
+    fun parse(input: A, reader: PositionReader): ParseResult<B>
+    fun print(value: B): PrintResult<A>
 
-    operator fun <B> plus(reducer: Reducer<A, B>): Parser<B> {
-        return ParserThenReducer(this, reducer)
+    operator fun <C> plus(parser: Parser<B, C>): Parser<A, C> {
+        return ParserThenParser(this, parser)
     }
 
-    operator fun <A0, C> plus(foldAction: FoldAction<A0, A, C>): Reducer<A0, C> {
-        return ParserThenFold(this, foldAction)
-    }
-
-    operator fun plus(recognizer: Recognizer): Parser<A> {
-        return ParserThenRecognizer(this, recognizer)
-    }
-
-    operator fun plus(consumeAction: ConsumeAction<A>): Recognizer {
-        return ParserThenConsume(this, consumeAction)
-    }
-
-    infix fun or(other: Parser<A>): Parser<A> {
+    infix fun or(other: Parser<A, B>): Parser<A, B> {
         return ParserOrParser(this, other)
+    }
+
+    companion object {
+        inline fun <reified A> Parser<A, A>.rep(minCount: Int = 0, maxCount: Int? = null): Parser<A, A> {
+            return RepeatParser(this, minCount, maxCount)
+        }
+
+        inline fun <reified A> Parser<A, A>.opt(): Parser<A, A> {
+            return RepeatParser(this, 0, 1)
+        }
+
+        inline fun <reified A, reified B, reified C> Parser<Unit, B>.fold(fold: FoldAction<A, B, C>): Parser<A, C> {
+            return FoldAppliedToParser(fold, this)
+        }
+
+        inline fun <reified A> Parser<Unit, Unit>.passThough(): Parser<A, A> {
+            return when (A::class) {
+                Unit::class ->
+                    @Suppress("UNCHECKED_CAST")
+                    this as Parser<A, A>
+                else -> {
+                    PassThroughWrapper(this)
+                }
+            }
+        }
     }
 }

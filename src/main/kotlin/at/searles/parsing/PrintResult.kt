@@ -1,32 +1,21 @@
 package at.searles.parsing
 
-import at.searles.parsing.parser.PartialPrintSuccess
 import at.searles.parsing.reader.CodePointSequence
 
-sealed interface PrintResult {
-    operator fun plus(right: PrintSuccess): PrintSuccess
-}
-
-data object PrintFailure: PrintResult {
-    override fun plus(right: PrintSuccess): PrintSuccess {
-        error("Cannot compose failure")
-    }
-}
-
-interface PrintSuccess : PrintResult {
-    override fun plus(right: PrintSuccess): PrintSuccess {
-        return ComposedPrintSuccess(this, right)
+interface OutputTree {
+    operator fun plus(right: OutputTree): OutputTree {
+        return ComposedOutputTree(this, right)
     }
 
     companion object {
-        fun empty(): PrintSuccess {
-            return EmptyPrintSuccess
+        fun empty(): OutputTree {
+            return EmptyOutputTree
         }
     }
 }
 
-data object EmptyPrintSuccess : PrintSuccess {
-    override fun plus(right: PrintSuccess): PrintSuccess {
+data object EmptyOutputTree : OutputTree {
+    override fun plus(right: OutputTree): OutputTree {
         return right
     }
 
@@ -35,13 +24,13 @@ data object EmptyPrintSuccess : PrintSuccess {
     }
 }
 
-data class TextPrintSuccess(val codePointSequence: CodePointSequence) : PrintSuccess {
+data class TextOutputTree(val codePointSequence: CodePointSequence) : OutputTree {
     override fun toString(): String {
         return codePointSequence.toString()
     }
 }
 
-data class ComposedPrintSuccess(val left: PrintSuccess, val right: PrintSuccess) : PrintSuccess {
+data class ComposedOutputTree(val left: OutputTree, val right: OutputTree) : OutputTree {
     override fun toString(): String {
         return "$left$right"
     }

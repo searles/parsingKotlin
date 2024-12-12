@@ -3,38 +3,40 @@ package at.searles.parsing.parser.arithmetics
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Plus
-import at.searles.parsing.lexer.regexp.Ranges
 import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
-import at.searles.parsing.parser.Reducer.Companion.rep
+import at.searles.parsing.parser.Parser.Companion.fold
+import at.searles.parsing.parser.Parser.Companion.passThough
+import at.searles.parsing.parser.Parser.Companion.rep
+import at.searles.parsing.reader.CodePointSequence
 
 object MathParser: WithLexer {
     override val lexer: Lexer = Lexer()
 
-    private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + MapAction { it.toReader().fold(0) { value, digit -> value * 10 + digit - '0'.code }  }
+    private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + MapAction<CodePointSequence, Int> { it.toReader().fold(0) { value, digit -> value * 10 + digit - '0'.code }  }
 
     val simpleArithmetic = number + (
-            "+".recognizer  + number + FoldAction { left: Int, right: Int -> left + right } or
-            "-".recognizer + number + FoldAction { left: Int, right: Int -> left - right }
+            "+".recognizer.passThough<Int>() + number.fold { left: Int, right: Int -> left + right } or
+            "-".recognizer.passThough<Int>() + number.fold { left: Int, right: Int -> left - right }
     )
 
-    val expr: Parser<Int> = self { sum }
+    val expr: Parser<Unit, Int> = ref { sum }
 
-    private val terminal = number or
-            "(".recognizer + expr + ")".recognizer
+    private val terminal: Parser<Unit, Int> = number or
+            "(".recognizer + expr + ")".recognizer.passThough()
 
-    private val literal = self {
-            "-".recognizer + it + MapAction { value: Int -> -value } or
+    private val literal: Parser<Unit, Int> by ref {
+            "-".recognizer + literal + MapAction { value: Int -> -value } or
             terminal
     }
 
-    private val prod = literal + (
-            "*".recognizer + literal + FoldAction { left: Int, right: Int -> left * right } or
-            "/".recognizer + literal + FoldAction { left: Int, right: Int -> left / right }
+    private val prod: Parser<Unit, Int> = literal + (
+            "*".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left * right } or
+            "/".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left / right }
     ).rep()
 
-    private val sum = prod + (
-        "+".recognizer + prod + FoldAction { left: Int, right: Int -> left + right } or
-        "-".recognizer + prod + FoldAction { left: Int, right: Int -> left - right }
+    private val sum: Parser<Unit, Int> = prod + (
+        "+".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left + right } or
+        "-".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left - right }
     ).rep()
 }

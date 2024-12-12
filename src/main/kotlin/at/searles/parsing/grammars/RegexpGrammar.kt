@@ -1,95 +1,58 @@
 package at.searles.parsing.grammars
 
-import at.searles.parsing.InvertFailure
-import at.searles.parsing.InvertResult
-import at.searles.parsing.InvertSuccess
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.*
 import at.searles.parsing.parser.*
-import at.searles.parsing.parser.Reducer.Companion.rep
+import at.searles.parsing.parser.Parser.Companion.fold
+import at.searles.parsing.parser.Parser.Companion.passThough
+import at.searles.parsing.parser.Parser.Companion.rep
+import at.searles.parsing.parser.utils.ListUtils
 import at.searles.parsing.reader.CodePointSequence
 
 object RegexpGrammar: WithLexer {
     override val lexer = Lexer()
+
+    val regexp by ref { expression }
+
+    val expression: Parser<Unit, Regexp> by ref { term + ("|".recognizer.passThough<Regexp>() + term.fold(FoldAction { r0, r1 -> r0 or r1})).rep() }
+
+    val term by ref { factor + (factor.fold(FoldAction<Regexp, Regexp, Regexp> { r0, r1 -> r0 + r1})).rep() }
+
+    val factor by ref { base + quantifier.rep() }
     
-    val regexp = self { expression }
-
-    val expression: Parser<Regexp> by lazy { self { term + ("|".recognizer + term + FoldAction<Regexp, Regexp, Regexp> { r0, r1 -> r0 or r1}).rep() } }
-
-    val term by lazy { factor + (factor + FoldAction<Regexp, Regexp, Regexp> { r0, r1 -> r0 + r1}).rep() }
-
-    val factor by lazy { base + quantifier.rep() }
-
-    val base by lazy {
-        ".".recognizer + InitAction { Regexp.ranges(0 .. Int.MAX_VALUE) } or
-                "[".recognizer + characterClass + "]".recognizer + MapAction { Regexp.ranges(it) } or
+    val base by ref {
+        ".".recognizer + MapAction.init { Regexp.ranges(0 .. Int.MAX_VALUE) } or
+                "[".recognizer + characterClass + "]".recognizer.passThough() + MapAction { Regexp.ranges(it) } or
                 singleChar + MapAction { Regexp.chars(it) } or
-                "(".recognizer + expression + ")".recognizer
+                "(".recognizer + expression + ")".recognizer.passThough()
     }
 
-    val quantifier: Reducer<Regexp, Regexp> by lazy {
-        "*".recognizer + MapAction<Regexp, Regexp> { it.rep() } or
-                "+".recognizer + MapAction { it.plus() } or
-                "?".recognizer + MapAction { it.opt() }
+    val quantifier by ref {
+        "*".recognizer.passThough<Regexp>() + MapAction { it.rep() } or
+                "+".recognizer.passThough<Regexp>() + MapAction { it.plus() } or
+                "?".recognizer.passThough<Regexp>() + MapAction { it.opt() }
     }
 
-    val characterClass by lazy {
+    val characterClass by ref {
         "^".recognizer + characterRanges + InvertRanges or
                 characterRanges
     }
 
-    val characterRanges by lazy {
-        emptyList<IntRange>() + (characterRange + append()).rep(1)
+    val characterRanges by ref {
+        ListUtils.empty<IntRange>() + (characterRange.fold(ListUtils.append())).rep(1)
     }
 
-    val characterRange by lazy {
+    val characterRange by ref {
         singleChar + (
-                ("-".recognizer + singleChar + FoldAction<Int, Int, IntRange> { first, last -> first .. last } ) or
+                ("-".recognizer.passThough<Int>() + singleChar.fold { first, last -> first .. last } ) or
                         MapAction { it .. it }
         )
     }
 
-    val singleChar by lazy {
+    val singleChar by ref {
         specialChar.parser + SpecialChar or
         character.parser + MapAction { it[0] }
-    }
-
-    fun <A> emptyList(): InitAction<List<A>> {
-        return object : InitAction<List<A>> {
-            override fun init(): List<A> {
-                return kotlin.collections.emptyList()
-            }
-
-            override fun invert(result: List<A>): InvertResult<Unit> {
-                return when {
-                    result.isEmpty() -> InvertSuccess(Unit)
-                    else -> InvertFailure
-                }
-            }
-        }
-    }
-
-    fun <A> append(): FoldAction<List<A>, A, List<A>> {
-        return object : FoldAction<List<A>, A, List<A>> {
-            override fun fold(left: List<A>, right: A): List<A> {
-                return left + right
-            }
-
-            override fun leftInverse(result: List<A>): InvertResult<List<A>> {
-                return when {
-                    result.isEmpty() -> InvertFailure
-                    else -> InvertSuccess(result.dropLast(1))
-                }
-            }
-
-            override fun rightInverse(result: List<A>): InvertResult<A> {
-                return when {
-                    result.isEmpty() -> InvertFailure
-                    else -> InvertSuccess(result.last())
-                }
-            }
-        }
     }
 
     /*

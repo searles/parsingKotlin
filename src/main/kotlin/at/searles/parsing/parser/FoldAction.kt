@@ -1,6 +1,7 @@
 package at.searles.parsing.parser
 
 import at.searles.parsing.InvertResult
+import at.searles.parsing.parser.combinators.FoldAppliedToParser
 
 fun interface FoldAction<A, B, C> {
     fun fold(left: A, right: B): C
