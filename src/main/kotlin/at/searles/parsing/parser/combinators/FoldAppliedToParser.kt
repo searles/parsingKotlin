@@ -25,4 +25,8 @@ class FoldAppliedToParser<A, B, C>(private val foldAction: FoldAction<A, B, C>, 
             is InvertFailure -> PrintFailure
         }
     }
+
+    override fun toString(): String {
+        return "$parser * $foldAction"
+    }
 }

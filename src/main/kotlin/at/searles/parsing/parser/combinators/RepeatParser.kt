@@ -50,4 +50,8 @@ class RepeatParser<A>(private val parser: Parser<A, A>, private val minCount: In
         }
         return result
     }
+
+    override fun toString(): String {
+        return "repeat[$minCount, $maxCount]($parser)"
+    }
 }

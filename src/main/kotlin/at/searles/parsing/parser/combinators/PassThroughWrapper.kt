@@ -23,4 +23,8 @@ class PassThroughWrapper<A>(private val parser: Parser<Unit, Unit>) : Parser<A, 
             is PrintFailure -> PrintFailure
         }
     }
+
+    override fun toString(): String {
+        return parser.toString()
+    }
 }

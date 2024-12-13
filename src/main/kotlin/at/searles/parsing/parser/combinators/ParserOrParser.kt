@@ -21,4 +21,8 @@ class ParserOrParser<A, B>(private val parser0: Parser<A, B>, private val parser
             is PrintFailure -> parser1.print(value)
         }
     }
+
+    override fun toString(): String {
+        return "($parser0 | $parser1)"
+    }
 }

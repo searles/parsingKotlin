@@ -19,25 +19,31 @@ object AstParser: WithLexer {
 
     private val number = Plus(Regexp.ranges('0'.code .. '9'.code)).parser + num()
 
-    val expr: Parser<Unit, Node> = ref { sum }
+    val expr: Parser<Unit, Node> by ref { sum }
 
-    private val terminal = number or
-            "(".recognizer + expr + ")".recognizer.passThough()
+    private val terminal by ref {
+        number or
+        "(".recognizer + expr + ")".recognizer.passThough()
+    }
 
     private val literal: Parser<Unit, Node> by ref {
         "-".recognizer + literal + convert("-") or
         terminal
     }
 
-    private val prod: Parser<Unit, Node> = literal + (
-            "*".recognizer.passThough<Node>() + literal.fold(branch("*")) or
-            "/".recognizer.passThough<Node>() + literal.fold(branch("/"))
-    ).rep()
+    private val prod: Parser<Unit, Node> by ref {
+        literal + (
+                "*".recognizer.passThough<Node>() + literal.fold(branch("*")) or
+                        "/".recognizer.passThough<Node>() + literal.fold(branch("/"))
+                ).rep()
+    }
 
-    private val sum = prod + (
-            "+".recognizer.passThough<Node>() + prod.fold(branch("+")) or
-            "-".recognizer.passThough<Node>() + prod.fold(branch("-"))
-    ).rep()
+    private val sum by ref {
+        prod + (
+                "+".recognizer.passThough<Node>() + prod.fold(branch("+")) or
+                        "-".recognizer.passThough<Node>() + prod.fold(branch("-"))
+                ).rep()
+    }
 
     private fun num(): MapAction<CodePointSequence, Node> {
         return object: MapAction<CodePointSequence, Node> {

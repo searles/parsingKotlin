@@ -53,6 +53,6 @@ class AstParserTest {
 
         // Assert
         Assertions.assertTrue(result is PrintSuccess)
-        Assertions.assertEquals(expected, (result as PrintSuccess).toString())
+        Assertions.assertEquals(expected, (result as PrintSuccess).output.toString())
     }
 }

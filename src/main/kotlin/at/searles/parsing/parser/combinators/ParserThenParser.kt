@@ -30,4 +30,8 @@ class ParserThenParser<A, B, C>(private val left: Parser<A, B>, private val righ
             is PrintFailure -> PrintFailure
         }
     }
+
+    override fun toString(): String {
+        return "($left + $right)"
+    }
 }

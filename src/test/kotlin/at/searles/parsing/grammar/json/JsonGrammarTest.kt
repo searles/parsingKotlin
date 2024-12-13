@@ -2,6 +2,7 @@ package at.searles.parsing.grammar.json
 
 import at.searles.parsing.ParseSuccess
 import at.searles.parsing.grammars.json.JsonGrammar
+import at.searles.parsing.parser.PrintSuccess
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -14,8 +15,9 @@ class JsonGrammarTest {
 
         // act
         val result = JsonGrammar.jsonObject.parse(Unit, reader)
+        val string = JsonGrammar.jsonObject.print((result as ParseSuccess).value)
 
         // assert
-        Assertions.assertTrue(result is ParseSuccess)
+        Assertions.assertEquals("{\"a\":\"b\"}", string)
     }
 }

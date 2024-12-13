@@ -20,23 +20,29 @@ object MathParser: WithLexer {
             "-".recognizer.passThough<Int>() + number.fold { left: Int, right: Int -> left - right }
     )
 
-    val expr: Parser<Unit, Int> = ref { sum }
+    val expr: Parser<Unit, Int> by ref { sum }
 
-    private val terminal: Parser<Unit, Int> = number or
-            "(".recognizer + expr + ")".recognizer.passThough()
+    private val terminal: Parser<Unit, Int> by ref {
+        number or
+                "(".recognizer + expr + ")".recognizer.passThough()
+    }
 
     private val literal: Parser<Unit, Int> by ref {
             "-".recognizer + literal + MapAction { value: Int -> -value } or
             terminal
     }
 
-    private val prod: Parser<Unit, Int> = literal + (
-            "*".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left * right } or
-            "/".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left / right }
-    ).rep()
+    private val prod: Parser<Unit, Int> by ref {
+        literal + (
+                "*".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left * right } or
+                        "/".recognizer.passThough<Int>() + literal.fold { left: Int, right: Int -> left / right }
+                ).rep()
+    }
 
-    private val sum: Parser<Unit, Int> = prod + (
-        "+".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left + right } or
-        "-".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left - right }
-    ).rep()
+    private val sum: Parser<Unit, Int> by ref {
+        prod + (
+                "+".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left + right } or
+                        "-".recognizer.passThough<Int>() + prod.fold { left: Int, right: Int -> left - right }
+                ).rep()
+    }
 }
