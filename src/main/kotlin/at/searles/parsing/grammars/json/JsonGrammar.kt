@@ -6,7 +6,6 @@ import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.parser.MapAction
 import at.searles.parsing.parser.Parser
 import at.searles.parsing.parser.Parser.Companion.fold
-import at.searles.parsing.parser.Parser.Companion.passThough
 import at.searles.parsing.parser.Parser.Companion.rep
 import at.searles.parsing.parser.ref
 import at.searles.parsing.parser.utils.ListUtils

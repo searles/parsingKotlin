@@ -12,6 +12,10 @@ interface Parser<A, B> {
         return ParserThenParser(this, parser)
     }
 
+    operator fun plus(recognizer: Recognizer): Parser<A, B> {
+        return ParserThenParser(this, recognizer.passThough())
+    }
+
     infix fun or(other: Parser<A, B>): Parser<A, B> {
         return ParserOrParser(this, other)
     }
@@ -27,17 +31,6 @@ interface Parser<A, B> {
 
         inline fun <reified A, reified B, reified C> Parser<Unit, B>.fold(fold: FoldAction<A, B, C>): Parser<A, C> {
             return FoldAppliedToParser(fold, this)
-        }
-
-        inline fun <reified A> Parser<Unit, Unit>.passThough(): Parser<A, A> {
-            return when (A::class) {
-                Unit::class ->
-                    @Suppress("UNCHECKED_CAST")
-                    this as Parser<A, A>
-                else -> {
-                    PassThroughWrapper(this)
-                }
-            }
         }
     }
 }

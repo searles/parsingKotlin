@@ -9,7 +9,6 @@ import at.searles.parsing.lexer.regexp.Plus
 import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Parser.Companion.fold
-import at.searles.parsing.parser.Parser.Companion.passThough
 import at.searles.parsing.parser.Parser.Companion.rep
 import at.searles.parsing.reader.CodePointSequence
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence

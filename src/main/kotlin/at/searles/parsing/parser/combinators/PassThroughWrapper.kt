@@ -3,28 +3,25 @@ package at.searles.parsing.parser.combinators
 import at.searles.parsing.ParseFailure
 import at.searles.parsing.ParseResult
 import at.searles.parsing.ParseSuccess
-import at.searles.parsing.parser.Parser
-import at.searles.parsing.parser.PrintFailure
-import at.searles.parsing.parser.PrintResult
-import at.searles.parsing.parser.PrintSuccess
+import at.searles.parsing.parser.*
 import at.searles.parsing.reader.PositionReader
 
-class PassThroughWrapper<A>(private val parser: Parser<Unit, Unit>) : Parser<A, A> {
+class PassThroughWrapper<A>(private val recognizer: Recognizer) : Parser<A, A> {
     override fun parse(input: A, reader: PositionReader): ParseResult<A> {
-        return when (val result = parser.parse(Unit, reader)) {
+        return when (val result = recognizer.parse(reader)) {
             is ParseSuccess -> ParseSuccess(input, result.start, result.end)
             is ParseFailure -> ParseFailure(result.position)
         }
     }
 
     override fun print(value: A): PrintResult<A> {
-        return when (val result = parser.print(Unit)) {
+        return when (val result = recognizer.print()) {
             is PrintSuccess -> PrintSuccess(value, result.output)
             is PrintFailure -> PrintFailure
         }
     }
 
     override fun toString(): String {
-        return parser.toString()
+        return recognizer.toString()
     }
 }

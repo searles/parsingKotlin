@@ -5,7 +5,6 @@ import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.*
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Parser.Companion.fold
-import at.searles.parsing.parser.Parser.Companion.passThough
 import at.searles.parsing.parser.Parser.Companion.rep
 import at.searles.parsing.parser.utils.ListUtils
 import at.searles.parsing.reader.CodePointSequence
@@ -23,7 +22,7 @@ object RegexpGrammar: WithLexer {
     
     val base by ref {
         ".".recognizer + MapAction.init { Regexp.ranges(0 .. Int.MAX_VALUE) } or
-                "[".recognizer + characterClass + "]".recognizer.passThough() + MapAction { Regexp.ranges(it) } or
+                "[".recognizer + characterClass + "]".recognizer + MapAction { Regexp.ranges(it) } or
                 singleChar + MapAction { Regexp.chars(it) } or
                 "(".recognizer + expression + ")".recognizer.passThough()
     }
