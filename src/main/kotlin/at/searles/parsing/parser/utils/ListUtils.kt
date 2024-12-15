@@ -19,6 +19,10 @@ object ListUtils {
                     else -> InvertFailure
                 }
             }
+
+            override fun toString(): String {
+                return "<emptyList>"
+            }
         }
     }
 
@@ -33,6 +37,10 @@ object ListUtils {
                     1 -> InvertSuccess(result.first())
                     else -> InvertFailure
                 }
+            }
+
+            override fun toString(): String {
+                return "<wrapList>"
             }
         }
     }
@@ -55,6 +63,26 @@ object ListUtils {
                     result.size <= minRemainingElements -> InvertFailure
                     else -> InvertSuccess(result.last())
                 }
+            }
+
+            override fun toString(): String {
+                return "<appendList>"
+            }
+        }
+    }
+
+    fun <A, B> toMap(): MapAction<List<Pair<A, B>>, Map<A, B>> {
+        return object : MapAction<List<Pair<A, B>>, Map<A, B>> {
+            override fun convert(value: List<Pair<A, B>>): Map<A, B> {
+                return value.toMap()
+            }
+
+            override fun invert(result: Map<A, B>): InvertResult<List<Pair<A, B>>> {
+                return InvertSuccess(result.entries.map { Pair(it.key, it.value) })
+            }
+
+            override fun toString(): String {
+                return "<toMap>"
             }
         }
     }

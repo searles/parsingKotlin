@@ -3,13 +3,13 @@ package at.searles.parsing.grammars.json
 import at.searles.parsing.grammars.Common
 import at.searles.parsing.lexer.Lexer
 import at.searles.parsing.lexer.WithLexer
-import at.searles.parsing.parser.MapAction
 import at.searles.parsing.parser.Parser
 import at.searles.parsing.parser.Parser.Companion.fold
 import at.searles.parsing.parser.Parser.Companion.rep
 import at.searles.parsing.parser.ref
 import at.searles.parsing.parser.utils.ListUtils
 import at.searles.parsing.parser.utils.TypeUtils.cast
+import at.searles.parsing.parser.utils.Utils
 import java.math.BigInteger
 
 object JsonGrammar: WithLexer {
@@ -22,19 +22,19 @@ object JsonGrammar: WithLexer {
     }
 
     // <object> ::= '{' [ <members> ] '}'
-    val jsonObject by ref { "{".recognizer + members + "}".recognizer.passThough() + MapAction { it.toMap() } }
+    val jsonObject by ref { "{".recognizer + members + "}".recognizer + ListUtils.toMap() }
 
     // <members> ::= <pair> | <pair> ',' <members>
     val members by ref { ListUtils.empty<Pair<String, Any>>() + (pair.fold(ListUtils.append())).rep() }
 
     // <pair> ::= <string> ':' <value>
-    val pair by ref { Common.DoubleQuotedString + ":".recognizer.passThough() + (value.fold { key, value -> key to value }) }
+    val pair by ref { Common.DoubleQuotedString + ":".recognizer + value.fold(Utils.toPair()) }
 
     // <array> ::= '[' [ <elements> ] ']'
-    val jsonArray by ref { "[".recognizer + (elements or ListUtils.empty()) + "]".recognizer.passThough() }
+    val jsonArray by ref { "[".recognizer + (elements or ListUtils.empty()) + "]".recognizer }
 
     // <elements> ::= <value> | <value> ',' <elements>
-    val elements by ref { value + ListUtils.wrap() + ( ",".recognizer.passThough<List<Any>>() + value.fold(ListUtils.append(1))).rep() }
+    val elements by ref { value + ListUtils.wrap() + ( ",".recognizer + value.fold(ListUtils.append(1))).rep() }
 
     // <value> ::= <string>
     //          | <number>

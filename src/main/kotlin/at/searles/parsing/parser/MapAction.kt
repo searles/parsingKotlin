@@ -10,6 +10,19 @@ fun interface MapAction<A, B>: Parser<A, B> {
         error("No inverse defined")
     }
 
+    fun withInverse(inverse: (B) -> InvertResult<A>): MapAction<A, B> {
+        val parent = this
+        return object : MapAction<A, B> {
+            override fun convert(value: A): B {
+                return parent.convert(value)
+            }
+
+            override fun invert(result: B): InvertResult<A> {
+                return inverse(result)
+            }
+        }
+    }
+
     override fun parse(input: A, reader: PositionReader): ParseResult<B> {
         return ParseSuccess(convert(input), reader.position, reader.position)
     }
@@ -44,6 +57,10 @@ fun interface MapAction<A, B>: Parser<A, B> {
                     return InvertSuccess(elimFn())
                 }
             }
+        }
+
+        fun <A, B> create(conversion: (A) -> B): MapAction<A, B> {
+            return MapAction { conversion(it) }
         }
     }
 }

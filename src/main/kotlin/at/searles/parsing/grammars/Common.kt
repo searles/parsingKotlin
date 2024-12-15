@@ -7,8 +7,8 @@ import at.searles.parsing.lexer.WithLexer
 import at.searles.parsing.lexer.regexp.Regexp
 import at.searles.parsing.parser.*
 import at.searles.parsing.parser.Parser.Companion.fold
-import at.searles.parsing.parser.Parser.Companion.passThough
 import at.searles.parsing.parser.Parser.Companion.rep
+import at.searles.parsing.parser.utils.StringUtils
 import at.searles.parsing.reader.CodePointSequence.Companion.asCodePointSequence
 import at.searles.parsing.reader.PositionReader
 import java.math.BigInteger
@@ -27,7 +27,7 @@ object Common {
         val hexDigits = hexDigit.plus().parser + MapAction { it.toString().toInt(16) }
 
         val specialChar =
-            "\\n".recognizer + MapAction { '\n'.code } or
+            "\\n".recognizer + MapAction.init { '\n'.code } or
             "\\r".recognizer + MapAction.init { '\r'.code } or
             "\\t".recognizer + MapAction.init { '\t'.code } or
             "\\u".recognizer + hexDigit4 or
@@ -40,9 +40,8 @@ object Common {
 
         val codePoint = specialChar or singleChar
 
-        val chars = MapAction.init { StringBuilder() } +
-                ( codePoint.fold(FoldAction<StringBuilder, Int, StringBuilder> { sb, cp -> sb.apply { appendCodePoint(cp) } } )).rep() +
-                MapAction { it.toString() }
+        val chars = StringUtils.Empty +
+                ( codePoint.fold(StringUtils.Append)).rep()
 
         val string = "\"".recognizer + chars + "\"".recognizer.passThough()
 
